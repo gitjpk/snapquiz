@@ -1,0 +1,183 @@
+asyncapi: 2.6.0
+info:
+  title: SnapQuiz Live Sessions Realtime API
+  version: 0.1.0
+  description: |
+    WebSocket events used to power the two-screen live quiz experience.
+
+servers:
+  local:
+    url: ws://localhost:3000
+    protocol: ws
+
+channels:
+  session/{sessionId}:
+    parameters:
+      sessionId:
+        schema:
+          type: string
+    subscribe:
+      summary: Receive session events
+      message:
+        oneOf:
+          - $ref: '#/components/messages/LobbyUpdated'
+          - $ref: '#/components/messages/QuestionStarted'
+          - $ref: '#/components/messages/QuestionClosed'
+          - $ref: '#/components/messages/AnswerReveal'
+          - $ref: '#/components/messages/LeaderboardUpdated'
+          - $ref: '#/components/messages/GameEnded'
+
+components:
+  messages:
+    LobbyUpdated:
+      name: lobby.updated
+      payload:
+        $ref: '#/components/schemas/LobbyUpdated'
+    QuestionStarted:
+      name: question.started
+      payload:
+        $ref: '#/components/schemas/QuestionStarted'
+    QuestionClosed:
+      name: question.closed
+      payload:
+        $ref: '#/components/schemas/QuestionClosed'
+    AnswerReveal:
+      name: answer.reveal
+      payload:
+        $ref: '#/components/schemas/AnswerReveal'
+    LeaderboardUpdated:
+      name: leaderboard.updated
+      payload:
+        $ref: '#/components/schemas/LeaderboardUpdated'
+    GameEnded:
+      name: game.ended
+      payload:
+        $ref: '#/components/schemas/GameEnded'
+
+  schemas:
+    LobbyUpdated:
+      type: object
+      required: [type, participantCount]
+      properties:
+        type:
+          type: string
+          const: lobby.updated
+        participantCount:
+          type: integer
+
+    QuestionStarted:
+      type: object
+      required: [type, question]
+      properties:
+        type:
+          type: string
+          const: question.started
+        question:
+          $ref: '#/components/schemas/RealtimeQuestion'
+
+    QuestionClosed:
+      type: object
+      required: [type, questionId]
+      properties:
+        type:
+          type: string
+          const: question.closed
+        questionId:
+          type: string
+
+    AnswerReveal:
+      type: object
+      required: [type, questionId, correctOptionId, distribution]
+      properties:
+        type:
+          type: string
+          const: answer.reveal
+        questionId:
+          type: string
+        correctOptionId:
+          type: string
+        distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerDistribution'
+
+    LeaderboardUpdated:
+      type: object
+      required: [type, entries]
+      properties:
+        type:
+          type: string
+          const: leaderboard.updated
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+
+    GameEnded:
+      type: object
+      required: [type, podium]
+      properties:
+        type:
+          type: string
+          const: game.ended
+        podium:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+
+    RealtimeQuestion:
+      type: object
+      required: [id, prompt, timeLimitSeconds, options]
+      properties:
+        id:
+          type: string
+        prompt:
+          type: string
+        timeLimitSeconds:
+          type: integer
+        mediaUrl:
+          type: string
+          nullable: true
+        mediaType:
+          type: string
+          nullable: true
+          enum: [image, video]
+        options:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/RealtimeOption'
+
+    RealtimeOption:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+
+    AnswerDistribution:
+      type: object
+      required: [optionId, count]
+      properties:
+        optionId:
+          type: string
+        count:
+          type: integer
+
+    LeaderboardEntry:
+      type: object
+      required: [participantId, nickname, pointsTotal, rank]
+      properties:
+        participantId:
+          type: string
+        nickname:
+          type: string
+        pointsTotal:
+          type: integer
+        rank:
+          type: integer

@@ -1,50 +1,51 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# SnapQuiz Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Accessible, Responsive UX
+The website must work on modern mobile + desktop screen sizes, with keyboard navigation, visible focus states, and reasonable contrast. All interactive controls must have labels; forms must show actionable validation errors.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Secure-by-Default
+All user input is treated as untrusted. Validate on the server, escape/encode output, and store secrets only in environment variables. No credentials/API keys in the repo.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Dynamic Data is a First-Class Feature
+The site must support dynamic content via server APIs (or server functions) with clear boundaries between UI, business logic, and persistence. Data reads/writes must be explicit, validated, and error-handled.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Reliability and Clear Failures
+Failures must be predictable: return correct HTTP status codes, show user-friendly error states, and log server-side errors with enough context to debug (without logging secrets).
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Keep It Simple
+Prefer the simplest implementation that meets requirements. Avoid premature abstractions; keep configuration minimal and documented.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Minimum Product Requirements (Dynamic Website)
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- **Routing**: Multiple pages/routes with consistent navigation.
+- **Dynamic content**: At least one page that loads data from a server API (or server function) and renders it.
+- **Mutations**: At least one form or interaction that writes data via a server API (create/update), with server-side validation.
+- **Auth (if any user-specific data exists)**: Protected routes must require authentication; authorization checks must happen server-side.
+- **Input validation**: Validate and normalize inputs server-side; reject invalid payloads with clear error messages.
+- **Security basics**: Mitigate XSS (escape/encode), avoid SQL injection (parameterized queries/ORM), and protect state-changing requests from CSRF where applicable.
+- **Performance basics**: Avoid loading unnecessary data; use pagination/limits for lists; include basic caching where appropriate.
+- **Accessibility**: Keyboard operable, labeled inputs, accessible error messages, and semantic HTML.
+- **Observability**: Server-side logs for requests/errors; do not log secrets or raw sensitive payloads.
+- **Configuration**: All environment-specific values via env vars; provide an `.env.example` (no secrets).
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Quality Gates
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- **Build**: `install → build` succeeds on a clean machine.
+- **Lint/format**: Consistent formatting and linting; CI must fail on violations.
+- **Tests (minimum)**:
+	- Unit tests for core business logic.
+	- A smoke test covering one critical end-to-end flow (e.g., load page → submit form → see result).
+- **Error handling**: No unhandled promise rejections/exceptions in normal flows; user-visible errors must be actionable.
 
 ## Governance
 <!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution is the source of truth for minimum standards.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- Any change that weakens these requirements must include a rationale and migration plan.
+- PRs should be reviewed for compliance with Security, Accessibility, and Quality Gates.
+- If a requirement does not apply, the PR must explicitly document why.
+
+**Version**: 1.0.0 | **Ratified**: 2026-01-20 | **Last Amended**: 2026-01-20
