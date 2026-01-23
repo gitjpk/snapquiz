@@ -12,26 +12,34 @@ import {
 } from "@/lib/realtime/events";
 import { calculatePointsFromTimestamps } from "@/lib/scoring/scoring";
 
-// Use globalThis to share emitter across Webpack bundles
+/**
+ * Global Socket.IO emitter shared across Webpack bundles.
+ * This is necessary because Next.js compiles server and client code separately.
+ */
 declare global {
   // eslint-disable-next-line no-var
   var __socketEmitter: ((sessionId: string, event: RealtimeEvent) => void) | undefined;
 }
 
-// Set the emitter from server.ts
+/**
+ * Register the Socket.IO emitter function from the custom server.
+ * Must be called during server initialization.
+ * @param fn - Function to emit events to a session room
+ */
 export function setEmitter(
   fn: (sessionId: string, event: RealtimeEvent) => void
-) {
+): void {
   globalThis.__socketEmitter = fn;
-  console.log("[SessionService] Emitter registered");
 }
 
-function emit(sessionId: string, event: RealtimeEvent) {
+/**
+ * Emit a realtime event to all clients in a session.
+ * @param sessionId - The session to emit to
+ * @param event - The event payload
+ */
+function emit(sessionId: string, event: RealtimeEvent): void {
   if (globalThis.__socketEmitter) {
-    console.log(`[SessionService] Emitting ${event.type} to session ${sessionId}`);
     globalThis.__socketEmitter(sessionId, event);
-  } else {
-    console.warn("[SessionService] No emitter registered, event not sent:", event.type);
   }
 }
 
@@ -44,6 +52,14 @@ export interface CreateSessionResult {
   pin: string;
 }
 
+/**
+ * Create a new live session for a quiz.
+ * Generates a unique 6-digit PIN for players to join.
+ * @param quizId - The quiz to create a session for
+ * @param leaderboardTopN - Number of top players to show on leaderboard
+ * @returns The session ID and PIN
+ * @throws Error if quiz not found
+ */
 export async function createSession(
   quizId: string,
   leaderboardTopN = 5
@@ -121,6 +137,14 @@ export interface JoinSessionResult {
   nickname: string;
 }
 
+/**
+ * Add a participant to a live session.
+ * Creates a score record and broadcasts the updated participant list.
+ * @param sessionId - The session to join
+ * @param nickname - The player's display name
+ * @returns The participant ID and nickname
+ * @throws Error if session not found or ended
+ */
 export async function joinSession(
   sessionId: string,
   nickname: string
@@ -173,6 +197,12 @@ export async function joinSession(
 // Game Flow Control
 // ============================================
 
+/**
+ * Start the quiz game for a session.
+ * Transitions from lobby to in_progress and broadcasts the first question.
+ * @param sessionId - The session to start
+ * @throws Error if session not found, already started, or has no questions
+ */
 export async function startGame(sessionId: string): Promise<void> {
   const session = await getSessionById(sessionId);
 
@@ -219,6 +249,12 @@ export async function startGame(sessionId: string): Promise<void> {
   );
 }
 
+/**
+ * Advance to the next question in the quiz.
+ * @param sessionId - The session to advance
+ * @returns true if advanced to next question, false if no more questions
+ * @throws Error if session not in progress
+ */
 export async function nextQuestion(sessionId: string): Promise<boolean> {
   const session = await getSessionById(sessionId);
 
@@ -266,6 +302,11 @@ export async function nextQuestion(sessionId: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * Close the current question to prevent further answers.
+ * @param sessionId - The session to close question for
+ * @throws Error if session not in progress
+ */
 export async function closeQuestion(sessionId: string): Promise<void> {
   const session = await getSessionById(sessionId);
 
@@ -279,6 +320,11 @@ export async function closeQuestion(sessionId: string): Promise<void> {
   emit(sessionId, createQuestionClosedEvent(question.id));
 }
 
+/**
+ * Reveal the correct answer and show response distribution.
+ * @param sessionId - The session to reveal answer for
+ * @throws Error if session not in progress or no correct answer defined
+ */
 export async function revealAnswer(sessionId: string): Promise<void> {
   const session = await getSessionById(sessionId);
 
@@ -315,6 +361,11 @@ export async function revealAnswer(sessionId: string): Promise<void> {
   );
 }
 
+/**
+ * Broadcast the current leaderboard to all participants.
+ * @param sessionId - The session to show leaderboard for
+ * @throws Error if session not found
+ */
 export async function showLeaderboard(sessionId: string): Promise<void> {
   const session = await prisma.liveSession.findUnique({
     where: { id: sessionId },
@@ -346,6 +397,12 @@ export async function showLeaderboard(sessionId: string): Promise<void> {
   emit(sessionId, createLeaderboardUpdatedEvent(entries));
 }
 
+/**
+ * End the game and broadcast final results.
+ * Sets session status to ended and shows the final podium.
+ * @param sessionId - The session to end
+ * @throws Error if session not found
+ */
 export async function endGame(sessionId: string): Promise<void> {
   const session = await prisma.liveSession.findUnique({
     where: { id: sessionId },
@@ -397,6 +454,16 @@ export interface SubmitAnswerResult {
   points?: number;
 }
 
+/**
+ * Submit an answer for the current question.
+ * Validates the submission, calculates points, and updates the score.
+ * @param sessionId - The session ID
+ * @param participantId - The participant submitting
+ * @param questionId - The question being answered
+ * @param selectedOptionId - The chosen answer option
+ * @returns Result with acceptance status, correctness, and points awarded
+ * @throws Error if session/question invalid or already answered
+ */
 export async function submitAnswer(
   sessionId: string,
   participantId: string,

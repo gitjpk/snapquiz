@@ -39,6 +39,11 @@ const optionColors = [
 // Option labels for screen readers
 const optionLabels = ["A", "B", "C", "D", "E", "F"];
 
+/**
+ * Interactive question view for players.
+ * Displays the question, timer, and answer options with Kahoot-style colors.
+ * Handles answer selection and shows feedback.
+ */
 export function PlayerQuestion({
   question,
   questionIndex,

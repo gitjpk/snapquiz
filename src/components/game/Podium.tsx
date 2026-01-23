@@ -13,6 +13,10 @@ interface PodiumProps {
   isPresenter?: boolean;
 }
 
+/**
+ * Animated podium display for top 3 players.
+ * Shows trophy icons and position-based styling.
+ */
 export function Podium({
   entries,
   currentParticipantId,

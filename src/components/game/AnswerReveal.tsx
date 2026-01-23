@@ -28,6 +28,10 @@ const optionColors = [
   { bg: "bg-orange-500", ring: "ring-orange-300" },
 ];
 
+/**
+ * Displays the answer reveal with correct answer highlighted
+ * and response distribution bar chart.
+ */
 export function AnswerReveal({
   prompt,
   options,

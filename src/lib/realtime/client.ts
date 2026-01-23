@@ -35,25 +35,21 @@ export function useSessionSocket(
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("[Socket.IO Client] Connected, joining session:", sessionId);
       setIsConnected(true);
       setError(null);
       socket.emit("join-session", sessionId);
     });
 
     socket.on("disconnect", () => {
-      console.log("[Socket.IO Client] Disconnected");
       setIsConnected(false);
     });
 
     socket.on("connect_error", (err) => {
-      console.error("[Socket.IO Client] Connection error:", err);
       setError(err);
       setIsConnected(false);
     });
 
     socket.on("session-event", (event: RealtimeEvent) => {
-      console.log("[Socket.IO Client] Received event:", event.type, event);
       onEventRef.current(event);
     });
 

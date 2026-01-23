@@ -105,9 +105,8 @@ export default function PresenterPage({
     }
   };
 
-  // Handle realtime events
+  // Handle realtime events from Socket.IO
   const handleEvent = useCallback((event: RealtimeEvent) => {
-    console.log("[Presenter] Received event:", event.type, event);
     switch (event.type) {
       case RealtimeEventType.LOBBY_UPDATED:
         setParticipantCount(event.participantCount);
@@ -132,7 +131,6 @@ export default function PresenterPage({
         break;
 
       case RealtimeEventType.ANSWER_REVEAL:
-        console.log("[Presenter] ANSWER_REVEAL - setting presenterState to reveal");
         setRevealData({
           correctOptionId: event.correctOptionId,
           distribution: event.distribution,

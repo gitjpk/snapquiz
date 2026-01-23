@@ -7,18 +7,32 @@ type SessionStatus = "lobby" | "in_progress" | "ended";
 type PresenterState = "lobby" | "question" | "reveal" | "leaderboard" | "ended";
 
 interface PresenterControlsProps {
+  /** Current session status from database */
   sessionStatus: SessionStatus;
+  /** Current presenter view state */
   presenterState: PresenterState;
+  /** Current question index (0-based) */
   questionIndex: number;
+  /** Total number of questions in quiz */
   totalQuestions: number;
+  /** Handler to start the game */
   onStartGame: () => void;
+  /** Handler to advance to next question */
   onNextQuestion: () => void;
+  /** Handler to reveal the correct answer */
   onRevealAnswer: () => void;
+  /** Handler to show current leaderboard */
   onShowLeaderboard: () => void;
+  /** Handler to end the game */
   onEndGame: () => void;
+  /** Whether an action is in progress */
   isLoading: boolean;
 }
 
+/**
+ * Fixed bottom control bar for the presenter view.
+ * Shows contextual buttons based on game state.
+ */
 export function PresenterControls({
   sessionStatus,
   presenterState,

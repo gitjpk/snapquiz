@@ -18,6 +18,10 @@ interface LeaderboardProps {
   previousEntries?: LeaderboardEntry[];
 }
 
+/**
+ * Displays the current game leaderboard with rankings and scores.
+ * Shows rank changes and highlights the current player.
+ */
 export function Leaderboard({
   entries,
   currentParticipantId,

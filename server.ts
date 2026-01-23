@@ -22,12 +22,14 @@ export function getIO(): SocketIOServer {
   return io;
 }
 
+/**
+ * Emit a realtime event to all clients in a session room.
+ * @param sessionId - The session ID to broadcast to
+ * @param event - The event payload to send
+ */
 export function emitToSession(sessionId: string, event: RealtimeEvent): void {
   if (io) {
-    console.log(`[Socket.IO] Emitting to session:${sessionId}`, event.type);
     io.to(`session:${sessionId}`).emit("session-event", event);
-  } else {
-    console.error("[Socket.IO] Cannot emit - io not initialized");
   }
 }
 
@@ -50,24 +52,14 @@ app.prepare().then(() => {
   });
 
   io.on("connection", (socket) => {
-    console.log(`[Socket.IO] Client connected: ${socket.id}`);
-
     // Join a session room
     socket.on("join-session", (sessionId: string) => {
-      const room = `session:${sessionId}`;
-      socket.join(room);
-      console.log(`[Socket.IO] ${socket.id} joined ${room}`);
+      socket.join(`session:${sessionId}`);
     });
 
     // Leave a session room
     socket.on("leave-session", (sessionId: string) => {
-      const room = `session:${sessionId}`;
-      socket.leave(room);
-      console.log(`[Socket.IO] ${socket.id} left ${room}`);
-    });
-
-    socket.on("disconnect", () => {
-      console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+      socket.leave(`session:${sessionId}`);
     });
   });
 
