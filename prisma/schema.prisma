@@ -1,0 +1,137 @@
+// Prisma schema for SnapQuiz - Live Quiz Game Sessions
+// Reference: specs/001-live-quiz-game/data-model.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Host - The person controlling the game
+model Host {
+  id          String   @id @default(cuid())
+  displayName String?
+  createdAt   DateTime @default(now())
+
+  quizzes Quiz[]
+}
+
+// Quiz - Reusable quiz definition
+model Quiz {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerHostId String?
+  ownerHost   Host?    @relation(fields: [ownerHostId], references: [id])
+
+  questions    Question[]
+  liveSessions LiveSession[]
+}
+
+// Question - A single multiple-choice prompt
+model Question {
+  id               String  @id @default(cuid())
+  quizId           String
+  quiz             Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  orderIndex       Int
+  prompt           String
+  timeLimitSeconds Int     @default(20)
+  mediaType        String? // 'image' | 'video'
+  mediaUrl         String?
+
+  answerOptions AnswerOption[]
+  responses     Response[]
+
+  @@index([quizId])
+}
+
+// AnswerOption - An option shown to participants
+model AnswerOption {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  orderIndex Int
+  label      String
+  isCorrect  Boolean  @default(false)
+
+  responses Response[]
+
+  @@index([questionId])
+}
+
+// LiveSession - A live run of a quiz
+model LiveSession {
+  id                   String    @id @default(cuid())
+  quizId               String
+  quiz                 Quiz      @relation(fields: [quizId], references: [id])
+  pin                  String    @unique
+  status               String    @default("lobby") // 'lobby' | 'in_progress' | 'ended'
+  createdAt            DateTime  @default(now())
+  startedAt            DateTime?
+  endedAt              DateTime?
+  currentQuestionIndex Int?
+  questionStartedAt    DateTime? // When the current question started (for scoring)
+  leaderboardTopN      Int       @default(5)
+
+  participants Participant[]
+  responses    Response[]
+  scores       Score[]
+
+  @@index([pin])
+  @@index([status])
+}
+
+// Participant - A person in a session
+model Participant {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  nickname  String
+  joinedAt  DateTime @default(now())
+  status    String   @default("active") // 'active' | 'disconnected' | 'left'
+
+  responses Response[]
+  score     Score?
+
+  @@index([sessionId])
+}
+
+// Response - A submitted answer by a participant for a specific question
+model Response {
+  id               String       @id @default(cuid())
+  sessionId        String
+  session          LiveSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantId    String
+  participant      Participant  @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         Question     @relation(fields: [questionId], references: [id])
+  selectedOptionId String
+  selectedOption   AnswerOption @relation(fields: [selectedOptionId], references: [id])
+  submittedAt      DateTime     @default(now())
+  respondedAt      DateTime     @default(now()) // Precise response time for scoring
+  isCorrect        Boolean
+  pointsAwarded    Int          @default(0)
+
+  @@unique([participantId, questionId])
+  @@index([sessionId])
+  @@index([questionId])
+}
+
+// Score - Current points for a participant (materialized)
+model Score {
+  id            String      @id @default(cuid())
+  sessionId     String
+  session       LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantId String      @unique
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  pointsTotal   Int         @default(0)
+  updatedAt     DateTime    @updatedAt
+
+  @@index([sessionId])
+  @@index([pointsTotal(sort: Desc)])
+}
