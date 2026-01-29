@@ -539,14 +539,14 @@ export async function submitAnswer(
   });
 
   // Calculate points using the scoring algorithm
-  const timeLimitMs = (questionWithTimeLimit?.timeLimitSeconds ?? 30) * 1000;
+  const timeLimitSeconds = questionWithTimeLimit?.timeLimitSeconds ?? 30;
   const questionStartedAt = session.questionStartedAt ?? now;
   
   const pointsAwarded = calculatePointsFromTimestamps(
     isCorrect,
     questionStartedAt,
     now,
-    timeLimitMs
+    timeLimitSeconds
   );
 
   // Create response with respondedAt timestamp

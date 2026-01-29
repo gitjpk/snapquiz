@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createSession } from "@/lib/sessions/sessionService";
 import {
   jsonResponse,
@@ -8,6 +8,7 @@ import {
 } from "@/lib/api/http";
 import { CreateSessionRequestSchema } from "@/lib/validation/schemas";
 import prisma from "@/lib/db/client";
+import { requireAuth } from "@/lib/auth/middleware";
 
 interface CreateSessionResponse {
   sessionId: string;
@@ -17,9 +18,13 @@ interface CreateSessionResponse {
 
 /**
  * POST /api/sessions
- * Create a new live session from a quiz
+ * Create a new live session from a quiz (requires authentication)
  */
 export async function POST(request: NextRequest): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   const parsed = await parseJsonBody(request, CreateSessionRequestSchema);
   if ("error" in parsed) {
     return parsed.error;

@@ -1,0 +1,55 @@
+# Podium Animation API Extensions
+
+openapi: 3.1.0
+info:
+  title: SnapQuiz Podium Animation API
+  version: 1.0.0
+  description: |
+    No new HTTP endpoints are required for this feature.
+    Podium animations are client-side only.
+    
+    This document describes the audio asset requirements.
+
+paths: {}
+
+components:
+  schemas:
+    PodiumAnimationPhase:
+      type: string
+      enum:
+        - idle
+        - drumroll
+        - reveal-3rd
+        - reveal-2nd
+        - reveal-1st
+        - celebration
+        - complete
+      description: |
+        Animation phases for the podium reveal sequence.
+        Used client-side only.
+    
+    AudioPreference:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: true
+          description: Whether audio is enabled for podium on presenter view
+      description: |
+        Stored in localStorage on presenter device.
+        Key: snapquiz:podium-audio-enabled
+
+# Static Assets Required
+# ----------------------
+# Location: public/audio/podium/
+#
+# | File           | Format | Max Size | Duration |
+# |----------------|--------|----------|----------|
+# | drumroll.mp3   | MP3    | 100KB    | ~2s      |
+# | fanfare.mp3    | MP3    | 150KB    | ~3s      |
+# | applause.mp3   | MP3    | 200KB    | ~4s      |
+#
+# Optional WebM versions for better compression:
+# | drumroll.webm  | WebM   | 50KB     | ~2s      |
+# | fanfare.webm   | WebM   | 75KB     | ~3s      |
+# | applause.webm  | WebM   | 100KB    | ~4s      |

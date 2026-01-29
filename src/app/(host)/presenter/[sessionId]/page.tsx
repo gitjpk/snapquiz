@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, use, useRef } from "react";
+import { useState, useEffect, useCallback, use, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PresenterControls } from "@/components/game/PresenterControls";
-import { PresenterLobby } from "@/components/game/PresenterLobby";
 import { JoinQrCode } from "@/components/game/JoinQrCode";
 import { AnswerReveal } from "@/components/game/AnswerReveal";
 import { Leaderboard } from "@/components/game/Leaderboard";
-import { Podium } from "@/components/game/Podium";
+import { AnimatedPodium, type PodiumParticipant } from "@/components/game/AnimatedPodium";
+import {
+  preloadPodiumAudio,
+  playAudio,
+  cleanupAudio,
+} from "@/lib/audio/podiumAudio";
+import type { PodiumAnimationPhase } from "@/lib/types/podium";
 import { useSessionSocket } from "@/lib/realtime/client";
 import {
   RealtimeEventType,
@@ -50,7 +55,7 @@ export default function PresenterPage({
   params: Promise<{ sessionId: string }>;
 }) {
   const { sessionId } = use(params);
-  const router = useRouter();
+  const _router = useRouter();
 
   // Session state
   const [session, setSession] = useState<SessionData | null>(null);
@@ -73,6 +78,45 @@ export default function PresenterPage({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoRevealRef = useRef<boolean>(false);
+
+  // Preload podium audio when entering leaderboard state (before final)
+  useEffect(() => {
+    if (presenterState === "leaderboard") {
+      preloadPodiumAudio().catch(() => {
+        // Ignore preload failures - audio will just not play
+      });
+    }
+    return () => {
+      if (presenterState === "ended") {
+        cleanupAudio();
+      }
+    };
+  }, [presenterState]);
+
+  // Convert leaderboard entries to PodiumParticipant format
+  const podiumParticipants = useMemo<PodiumParticipant[]>(() => {
+    return podium.slice(0, 3).map((entry, index) => ({
+      id: entry.participantId,
+      name: entry.nickname,
+      score: entry.pointsTotal,
+      rank: (index + 1) as 1 | 2 | 3,
+    }));
+  }, [podium]);
+
+  // Handle animation phase changes for audio sync
+  const handlePodiumPhaseChange = useCallback((phase: PodiumAnimationPhase) => {
+    switch (phase) {
+      case "drumroll":
+        playAudio("drumroll").catch(() => {});
+        break;
+      case "reveal-1st":
+        playAudio("fanfare").catch(() => {});
+        break;
+      case "celebration":
+        playAudio("applause").catch(() => {});
+        break;
+    }
+  }, []);
 
   // Fetch session data
   useEffect(() => {
@@ -195,8 +239,8 @@ export default function PresenterPage({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.NEXT_PUBLIC_HOST_API_KEY || "",
         },
+        credentials: "include", // Include session cookies
         body: JSON.stringify({ action }),
       });
 
@@ -396,7 +440,16 @@ export default function PresenterPage({
         {/* Game Ended */}
         {presenterState === "ended" && (
           <div className="mx-auto max-w-2xl">
-            <Podium entries={podium} isPresenter />
+            <div className="text-center mb-8">
+              <span className="text-8xl">🏆</span>
+              <h2 className="mt-4 text-4xl font-bold">Final Results</h2>
+            </div>
+            <AnimatedPodium
+              participants={podiumParticipants}
+              isPresenter
+              autoStart
+              onPhaseChange={handlePodiumPhaseChange}
+            />
           </div>
         )}
       </main>

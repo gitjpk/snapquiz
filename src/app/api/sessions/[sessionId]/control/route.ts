@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   startGame,
   nextQuestion,
@@ -9,15 +9,13 @@ import {
 } from "@/lib/sessions/sessionService";
 import {
   jsonResponse,
-  unauthorized,
   badRequest,
   notFound,
   parseJsonBody,
 } from "@/lib/api/http";
 import { HostControlRequestSchema } from "@/lib/validation/schemas";
 import prisma from "@/lib/db/client";
-
-const HOST_API_KEY = process.env.HOST_API_KEY;
+import { requireAuth } from "@/lib/auth/middleware";
 
 interface HostControlResponse {
   ok: boolean;
@@ -26,21 +24,17 @@ interface HostControlResponse {
 /**
  * POST /api/sessions/[sessionId]/control
  * Host control endpoint (start/next/reveal/leaderboard/end)
- * Protected by HOST_API_KEY
+ * Protected by session authentication
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ): Promise<Response> {
-  const { sessionId } = await params;
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
-  // Check API key (if configured)
-  if (HOST_API_KEY) {
-    const apiKey = request.headers.get("x-api-key");
-    if (apiKey !== HOST_API_KEY) {
-      return unauthorized("Invalid or missing API key");
-    }
-  }
+  const { sessionId } = await params;
 
   // Parse request
   const parsed = await parseJsonBody(request, HostControlRequestSchema);

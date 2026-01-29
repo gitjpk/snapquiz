@@ -19,13 +19,13 @@ export function PlayerLobby({
   pin,
 }: PlayerLobbyProps) {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 pb-safe">
       <Card className="w-full max-w-sm text-center">
         <CardHeader>
           <CardTitle className="text-2xl">You&apos;re in!</CardTitle>
           {pin && (
             <p className="text-sm text-muted-foreground">
-              Game PIN: <span className="font-mono font-bold">{pin}</span>
+              Game PIN: <span className="font-mono font-bold text-lg">{pin}</span>
             </p>
           )}
         </CardHeader>

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/client";
 import {
   jsonResponse,
@@ -7,13 +7,14 @@ import {
   parseJsonBody,
 } from "@/lib/api/http";
 import { UpdateQuizRequestSchema } from "@/lib/validation/schemas";
+import { requireAuth } from "@/lib/auth/middleware";
 
 interface QuestionDetail {
   id: string;
   prompt: string;
   timeLimitSeconds: number;
   media: { type: string; url: string } | null;
-  options: { id: string; label: string }[];
+  options: { id: string; label: string; isCorrect: boolean }[];
 }
 
 interface QuizDetailResponse {
@@ -25,12 +26,16 @@ interface QuizDetailResponse {
 
 /**
  * GET /api/quizzes/[quizId]
- * Get quiz details with questions
+ * Get quiz details with questions (requires authentication)
  */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ quizId: string }> }
 ): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   const { quizId } = await params;
 
   const quiz = await prisma.quiz.findUnique({
@@ -66,6 +71,7 @@ export async function GET(
       options: q.answerOptions.map((o) => ({
         id: o.id,
         label: o.label,
+        isCorrect: o.isCorrect,
       })),
     })),
   };
@@ -75,12 +81,16 @@ export async function GET(
 
 /**
  * PUT /api/quizzes/[quizId]
- * Update a quiz
+ * Update a quiz (requires authentication)
  */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ quizId: string }> }
 ): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   const { quizId } = await params;
 
   // Check quiz exists
@@ -176,5 +186,73 @@ export async function PUT(
   } catch (error) {
     console.error("Failed to update quiz:", error);
     return badRequest("Failed to update quiz");
+  }
+}
+
+/**
+ * DELETE /api/quizzes/[quizId]
+ * Delete a quiz and all associated data (requires authentication)
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ quizId: string }> }
+): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
+  const { quizId } = await params;
+
+  // Check quiz exists
+  const existing = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return notFound("Quiz");
+  }
+
+  try {
+    // First, delete all associated sessions and their data
+    // Get all sessions for this quiz
+    const sessions = await prisma.liveSession.findMany({
+      where: { quizId },
+      select: { id: true },
+    });
+
+    const sessionIds = sessions.map((s) => s.id);
+
+    if (sessionIds.length > 0) {
+      // Delete responses for all sessions
+      await prisma.response.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+
+      // Delete scores for all sessions
+      await prisma.score.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+
+      // Delete participants for all sessions
+      await prisma.participant.deleteMany({
+        where: { sessionId: { in: sessionIds } },
+      });
+
+      // Delete all sessions
+      await prisma.liveSession.deleteMany({
+        where: { quizId },
+      });
+    }
+
+    // Now delete the quiz (cascade will handle questions and answer options)
+    await prisma.quiz.delete({
+      where: { id: quizId },
+    });
+
+    return jsonResponse({ ok: true });
+  } catch (error) {
+    console.error("Failed to delete quiz:", error);
+    return badRequest("Failed to delete quiz. It may have active sessions.");
   }
 }

@@ -1,0 +1,92 @@
+# Podium Animation Events
+
+asyncapi: 3.0.0
+info:
+  title: SnapQuiz Podium Animation Events
+  version: 1.0.0
+  description: |
+    WebSocket events for podium animation synchronization.
+    These events extend the existing session events from 001-live-quiz-game.
+
+channels:
+  session/{sessionId}:
+    address: session/{sessionId}
+    parameters:
+      sessionId:
+        description: The unique session identifier
+    messages:
+      podiumPhaseChanged:
+        $ref: '#/components/messages/podiumPhaseChanged'
+      audioPreferenceChanged:
+        $ref: '#/components/messages/audioPreferenceChanged'
+
+operations:
+  publishPodiumPhase:
+    action: send
+    channel:
+      $ref: '#/channels/session~1{sessionId}'
+    summary: Server broadcasts podium animation phase changes
+    messages:
+      - $ref: '#/components/messages/podiumPhaseChanged'
+  
+  publishAudioPreference:
+    action: send
+    channel:
+      $ref: '#/channels/session~1{sessionId}'
+    summary: Server broadcasts audio preference changes from presenter
+    messages:
+      - $ref: '#/components/messages/audioPreferenceChanged'
+
+components:
+  messages:
+    podiumPhaseChanged:
+      name: podium.phase.changed
+      title: Podium Phase Changed
+      summary: Fired when the podium animation advances to a new phase
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - sessionId
+          - phase
+          - timestamp
+        properties:
+          sessionId:
+            type: string
+            description: Session identifier
+          phase:
+            type: string
+            enum:
+              - idle
+              - drumroll
+              - reveal-3rd
+              - reveal-2nd
+              - reveal-1st
+              - celebration
+              - complete
+            description: Current animation phase
+          timestamp:
+            type: integer
+            description: Server timestamp for sync
+          reducedMotion:
+            type: boolean
+            description: Whether reduced motion mode is active
+            default: false
+    
+    audioPreferenceChanged:
+      name: audio.preference.changed
+      title: Audio Preference Changed
+      summary: Fired when presenter toggles audio on/off
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - sessionId
+          - audioEnabled
+        properties:
+          sessionId:
+            type: string
+            description: Session identifier
+          audioEnabled:
+            type: boolean
+            description: Whether audio is enabled for this session

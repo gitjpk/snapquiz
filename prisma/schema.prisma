@@ -28,6 +28,10 @@ model Quiz {
   updatedAt   DateTime @updatedAt
   ownerHostId String?
   ownerHost   Host?    @relation(fields: [ownerHostId], references: [id])
+  
+  // AI Generation metadata (null if manually created)
+  // JSON: { sourceType, sourceValue, difficulty, questionCount, tokenUsage, generatedAt }
+  generatedFrom String?
 
   questions    Question[]
   liveSessions LiveSession[]
@@ -134,4 +138,52 @@ model Score {
 
   @@index([sessionId])
   @@index([pointsTotal(sort: Desc)])
+}
+
+// =====================================================
+// Host Password Protection (Feature 002)
+// Reference: specs/002-host-password-protection/data-model.md
+// =====================================================
+
+// HostCredential - Single shared password for MVP
+model HostCredential {
+  id           String   @id @default(cuid())
+  passwordHash String
+  jwtSecret    String   // Random 256-bit secret for JWT signing
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// HostSession - Tracks active sessions for audit/revocation
+model HostSession {
+  id        String    @id @default(cuid())
+  tokenId   String    @unique // JWT jti claim
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  ipAddress String?
+  userAgent String?
+
+  @@index([tokenId])
+  @@index([expiresAt])
+}
+
+// =====================================================
+// AI Quiz Generation (Feature 004)
+// Reference: specs/004-ai-quiz-generation/data-model.md
+// =====================================================
+
+// LLMSettings - Host's LLM API configuration
+model LLMSettings {
+  id            String   @id @default(cuid())
+  hostId        String   @unique // Only one config per host
+  provider      String   // 'openai' | 'anthropic' | 'azure-foundry'
+  apiEndpoint   String   // Custom endpoint URL
+  apiKey        String   // Encrypted API key
+  model         String?  // Selected model (for azure-foundry)
+  detectedModel String?  // Auto-detected model name from API
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([hostId])
 }

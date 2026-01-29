@@ -56,9 +56,9 @@ export function JoinForm({
   const isValid = pin.length === 6 && nickname.trim().length > 0;
 
   return (
-    <Card className="w-full max-w-sm" role="region" aria-label="Join quiz form">
+    <Card className="w-full max-w-sm mx-auto" role="region" aria-label="Join quiz form">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl" id={`${formId}-title`}>
+        <CardTitle className="text-2xl sm:text-3xl\" id={`${formId}-title`}>
           Join Quiz
         </CardTitle>
         <CardDescription id={`${formId}-desc`}>
@@ -68,12 +68,12 @@ export function JoinForm({
       <CardContent>
         <form 
           onSubmit={handleSubmit} 
-          className="space-y-4"
+          className="space-y-5"
           aria-labelledby={`${formId}-title`}
           aria-describedby={error ? errorId : `${formId}-desc`}
         >
           <div className="space-y-2">
-            <Label htmlFor={pinId}>Game PIN</Label>
+            <Label htmlFor={pinId} className="text-base">Game PIN</Label>
             <Input
               id={pinId}
               type="text"
@@ -82,7 +82,7 @@ export function JoinForm({
               placeholder="Enter 6-digit PIN"
               value={pin}
               onChange={handlePinChange}
-              className="h-14 text-center text-2xl tracking-widest"
+              className="h-16 text-center text-3xl tracking-[0.3em] font-mono touch-manipulation"
               maxLength={6}
               autoComplete="off"
               autoFocus={!initialPin}
@@ -97,14 +97,14 @@ export function JoinForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={nicknameId}>Nickname</Label>
+            <Label htmlFor={nicknameId} className="text-base">Nickname</Label>
             <Input
               id={nicknameId}
               type="text"
               placeholder="Your name"
               value={nickname}
               onChange={(e) => setNickname(e.target.value.slice(0, 24))}
-              className="h-12 text-lg"
+              className="h-14 text-xl touch-manipulation"
               maxLength={24}
               autoComplete="off"
               autoFocus={!!initialPin}
@@ -131,7 +131,7 @@ export function JoinForm({
 
           <Button
             type="submit"
-            className="h-12 w-full text-lg"
+            className="h-14 w-full text-xl font-semibold touch-manipulation"
             disabled={!isValid || isLoading}
             aria-busy={isLoading}
           >

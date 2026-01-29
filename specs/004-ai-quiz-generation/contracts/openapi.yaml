@@ -1,0 +1,371 @@
+openapi: 3.1.0
+info:
+  title: SnapQuiz AI Quiz Generation API
+  version: 1.0.0
+  description: API endpoints for AI-powered quiz generation from topics, documents, and URLs
+
+servers:
+  - url: /api
+
+paths:
+  /llm/settings:
+    get:
+      summary: Get LLM settings
+      description: Retrieve the host's LLM configuration (API key is masked)
+      operationId: getLLMSettings
+      tags:
+        - LLM Configuration
+      security:
+        - hostAuth: []
+      responses:
+        '200':
+          description: LLM settings found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMSettingsResponse'
+        '404':
+          description: LLM settings not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Save LLM settings
+      description: Create or update LLM configuration, validates connection before saving
+      operationId: saveLLMSettings
+      tags:
+        - LLM Configuration
+      security:
+        - hostAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMSettingsInput'
+      responses:
+        '200':
+          description: Settings saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMSettingsResponse'
+        '400':
+          description: Validation error or connection failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /llm/test-connection:
+    post:
+      summary: Test LLM connection
+      description: Test connection to LLM provider without saving settings
+      operationId: testLLMConnection
+      tags:
+        - LLM Configuration
+      security:
+        - hostAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMSettingsInput'
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionTestResult'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /quizzes/generate:
+    post:
+      summary: Generate quiz questions
+      description: Generate quiz questions from a topic, document, or URL using AI
+      operationId: generateQuiz
+      tags:
+        - Quiz Generation
+      security:
+        - hostAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GenerateQuizRequest'
+      responses:
+        '200':
+          description: Questions generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateQuizResponse'
+        '400':
+          description: Validation error or generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '412':
+          description: LLM settings not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    hostAuth:
+      type: apiKey
+      in: cookie
+      name: host_session
+      description: JWT session token in HTTP-only cookie
+
+  schemas:
+    LLMProvider:
+      type: string
+      enum:
+        - openai
+        - anthropic
+      description: LLM provider type
+
+    DifficultyLevel:
+      type: string
+      enum:
+        - easy
+        - medium
+        - hard
+      description: Question difficulty level
+
+    SourceType:
+      type: string
+      enum:
+        - topic
+        - document
+        - url
+      description: Source type for quiz generation
+
+    LLMSettingsInput:
+      type: object
+      required:
+        - provider
+        - apiEndpoint
+        - apiKey
+      properties:
+        provider:
+          $ref: '#/components/schemas/LLMProvider'
+        apiEndpoint:
+          type: string
+          format: uri
+          maxLength: 500
+          example: 'https://api.openai.com/v1'
+          description: API endpoint URL
+        apiKey:
+          type: string
+          maxLength: 500
+          example: 'sk-...'
+          description: API key for the provider
+
+    LLMSettingsResponse:
+      type: object
+      required:
+        - id
+        - provider
+        - apiEndpoint
+        - apiKeyMasked
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        provider:
+          $ref: '#/components/schemas/LLMProvider'
+        apiEndpoint:
+          type: string
+        apiKeyMasked:
+          type: string
+          example: 'sk-...abc123'
+          description: Masked API key (only last 6 chars visible)
+        detectedModel:
+          type: string
+          nullable: true
+          example: 'gpt-4o'
+          description: Auto-detected model name
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ConnectionTestResult:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+        modelName:
+          type: string
+          nullable: true
+          description: Detected model name on success
+        error:
+          type: string
+          nullable: true
+          description: Error message on failure
+
+    GenerateQuizRequest:
+      type: object
+      required:
+        - sourceType
+        - questionCount
+        - difficulty
+      properties:
+        sourceType:
+          $ref: '#/components/schemas/SourceType'
+        topic:
+          type: string
+          maxLength: 1000
+          description: Topic text (required if sourceType is 'topic')
+        url:
+          type: string
+          format: uri
+          description: URL to extract content from (required if sourceType is 'url')
+        document:
+          type: string
+          format: binary
+          description: Document file (required if sourceType is 'document')
+        questionCount:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Number of questions to generate
+        difficulty:
+          $ref: '#/components/schemas/DifficultyLevel'
+
+    GeneratedQuestion:
+      type: object
+      required:
+        - prompt
+        - options
+        - correctOptionIndex
+        - timeLimitSeconds
+      properties:
+        prompt:
+          type: string
+          maxLength: 500
+          description: Question text
+        options:
+          type: array
+          items:
+            type: string
+            maxLength: 200
+          minItems: 4
+          maxItems: 4
+          description: Exactly 4 answer options
+        correctOptionIndex:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Index of the correct answer (0-3)
+        timeLimitSeconds:
+          type: integer
+          minimum: 10
+          maximum: 120
+          default: 30
+          description: Time limit for the question in seconds
+        explanation:
+          type: string
+          nullable: true
+          description: AI-generated explanation for the correct answer
+
+    TokenUsage:
+      type: object
+      required:
+        - inputTokens
+        - outputTokens
+        - totalTokens
+      properties:
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        totalTokens:
+          type: integer
+
+    GenerateQuizResponse:
+      type: object
+      required:
+        - questions
+        - tokenUsage
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeneratedQuestion'
+        tokenUsage:
+          $ref: '#/components/schemas/TokenUsage'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Any warnings (e.g., fewer questions generated than requested)
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - NOT_FOUND
+            - PRECONDITION_FAILED
+            - INTERNAL_ERROR
+            - LLM_ERROR
+            - PARSING_ERROR
+            - URL_FETCH_ERROR
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 declare global {
+  // Using var for global singleton pattern (required by Next.js)
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }

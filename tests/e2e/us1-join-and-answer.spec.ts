@@ -11,9 +11,14 @@ import { test, expect } from "@playwright/test";
  * 5. Submit an answer
  * 6. See locked/confirmed answer
  * 7. See correctness result
+ * 
+ * Required env: DEMO_API_KEY must be set for e2e tests
  */
 
-const DEMO_API_KEY = process.env.DEMO_API_KEY || "demo-secret-key";
+const DEMO_API_KEY = process.env.DEMO_API_KEY;
+if (!DEMO_API_KEY) {
+  throw new Error("DEMO_API_KEY environment variable is required for e2e tests");
+}
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
 test.describe("US1: Join and Play", () => {

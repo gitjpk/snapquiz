@@ -1,0 +1,283 @@
+openapi: 3.0.3
+info:
+  title: SnapQuiz Host Authentication API
+  description: Authentication endpoints for host password protection
+  version: 1.0.0
+
+servers:
+  - url: /api/auth
+    description: Authentication API base path
+
+paths:
+  /setup:
+    post:
+      summary: Initial password setup
+      description: |
+        Creates the initial host password. Only works when no password exists.
+        Returns 409 Conflict if password already set.
+      operationId: setupPassword
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupRequest'
+      responses:
+        '201':
+          description: Password created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: HTTP-only session cookie
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Password already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /login:
+    post:
+      summary: Host login
+      description: Validates password and creates a session token
+      operationId: login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: HTTP-only session cookie
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /logout:
+    post:
+      summary: Host logout
+      description: Revokes the current session token
+      operationId: logout
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Clears the session cookie
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /change-password:
+    post:
+      summary: Change host password
+      description: Updates the host password (requires authentication)
+      operationId: changePassword
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password updated successfully
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /status:
+    get:
+      summary: Check authentication status
+      description: Returns whether a password is set and if user is authenticated
+      operationId: getStatus
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+components:
+  schemas:
+    SetupRequest:
+      type: object
+      required:
+        - password
+        - confirmPassword
+      properties:
+        password:
+          type: string
+          minLength: 8
+          description: New host password (min 8 characters)
+          example: "securepassword123"
+        confirmPassword:
+          type: string
+          description: Password confirmation (must match password)
+          example: "securepassword123"
+
+    LoginRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          description: Host password
+          example: "securepassword123"
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+        - confirmNewPassword
+      properties:
+        currentPassword:
+          type: string
+          description: Current host password
+        newPassword:
+          type: string
+          minLength: 8
+          description: New password (min 8 characters)
+        confirmNewPassword:
+          type: string
+          description: New password confirmation
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the session expires
+
+    StatusResponse:
+      type: object
+      properties:
+        isSetup:
+          type: boolean
+          description: Whether initial password has been set
+        isAuthenticated:
+          type: boolean
+          description: Whether current request has valid session
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "INVALID_PASSWORD"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The password you entered is incorrect"
+
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "VALIDATION_ERROR"
+              message:
+                type: string
+                example: "Password must be at least 8 characters"
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "UNAUTHORIZED"
+            message: "Authentication required"
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: host_session
+      description: HTTP-only session cookie containing JWT

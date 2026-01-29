@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -68,11 +67,11 @@ export default function QuizEditorPage({
         setForm({
           title: data.title,
           description: data.description || "",
-          questions: data.questions.map((q: { prompt: string; timeLimitSeconds: number; options: { id: string; label: string }[] }, qIndex: number) => ({
+          questions: data.questions.map((q: { prompt: string; timeLimitSeconds: number; options: { id: string; label: string; isCorrect: boolean }[] }) => ({
             prompt: q.prompt,
             timeLimitSeconds: q.timeLimitSeconds,
             options: q.options.map((o: { label: string }) => o.label),
-            correctOptionIndex: 0, // We don't have this info from the API yet
+            correctOptionIndex: q.options.findIndex((o: { isCorrect: boolean }) => o.isCorrect),
           })),
         });
       } else {

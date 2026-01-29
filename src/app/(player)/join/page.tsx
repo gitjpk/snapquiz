@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { JoinForm } from "@/components/game/JoinForm";
+import { Loader2 } from "lucide-react";
 
-export default function JoinPage() {
+function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPin = searchParams.get("pin") || "";
@@ -69,7 +70,7 @@ export default function JoinPage() {
   );
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 pb-safe">
       <JoinForm
         onSubmit={handleSubmit}
         initialPin={initialPin}
@@ -77,5 +78,19 @@ export default function JoinPage() {
         error={error}
       />
     </main>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen flex-col items-center justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </main>
+      }
+    >
+      <JoinPageContent />
+    </Suspense>
   );
 }

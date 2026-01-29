@@ -130,6 +130,16 @@ export const hostControlRateLimit = createRateLimiter({
 });
 
 /**
+ * Rate limiter for login attempts: 5 requests per minute per IP
+ * Per FR-010: max 5 attempts per minute per IP to mitigate brute-force attacks
+ */
+export const loginRateLimit = createRateLimiter({
+  maxRequests: 5,
+  windowMs: 60 * 1000,
+  keyPrefix: "login",
+});
+
+/**
  * Get client IP from request headers
  * Handles common proxy scenarios
  */

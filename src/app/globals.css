@@ -77,4 +77,209 @@
   .safe-area-inset {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
+  
+  /* Safe area padding for bottom navigation/home indicator */
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+  }
+  
+  /* Prevent text selection on interactive elements */
+  .select-none {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Better touch handling */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+}
+
+/* ===========================================
+   Podium Animation Keyframes & Classes
+   =========================================== */
+
+/* Slide up animation for podium entries */
+@keyframes podium-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(100px) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Fade in animation */
+@keyframes podium-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Glow pulse animation for winner highlight */
+@keyframes podium-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4),
+                0 0 40px rgba(255, 215, 0, 0.2),
+                0 0 60px rgba(255, 215, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6),
+                0 0 60px rgba(255, 215, 0, 0.4),
+                0 0 90px rgba(255, 215, 0, 0.2);
+  }
+}
+
+/* Silver glow for 2nd place */
+@keyframes podium-glow-silver {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.4),
+                0 0 30px rgba(192, 192, 192, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(192, 192, 192, 0.6),
+                0 0 50px rgba(192, 192, 192, 0.3);
+  }
+}
+
+/* Bronze glow for 3rd place */
+@keyframes podium-glow-bronze {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(205, 127, 50, 0.4),
+                0 0 30px rgba(205, 127, 50, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(205, 127, 50, 0.6),
+                0 0 50px rgba(205, 127, 50, 0.3);
+  }
+}
+
+/* Bounce animation for podium reveal */
+@keyframes podium-bounce {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Drumroll shake animation */
+@keyframes drumroll-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+/* Crown/trophy bounce for winner */
+@keyframes crown-bounce {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(5deg);
+  }
+}
+
+/* Utility classes for podium animations */
+@layer utilities {
+  .animate-podium-slide-up {
+    animation: podium-slide-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-podium-fade-in {
+    animation: podium-fade-in 0.4s ease-out forwards;
+  }
+
+  .animate-podium-glow {
+    animation: podium-glow 2s ease-in-out infinite;
+  }
+
+  .animate-podium-glow-silver {
+    animation: podium-glow-silver 2s ease-in-out infinite;
+  }
+
+  .animate-podium-glow-bronze {
+    animation: podium-glow-bronze 2s ease-in-out infinite;
+  }
+
+  .animate-podium-bounce {
+    animation: podium-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-drumroll-shake {
+    animation: drumroll-shake 0.1s linear infinite;
+  }
+
+  .animate-crown-bounce {
+    animation: crown-bounce 1s ease-in-out infinite;
+  }
+
+  /* Animation delay utilities for staggered reveals */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .animation-delay-700 {
+    animation-delay: 700ms;
+  }
+
+  .animation-delay-1000 {
+    animation-delay: 1000ms;
+  }
+}
+
+/* Reduced motion support - disable animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-podium-slide-up,
+  .animate-podium-fade-in,
+  .animate-podium-glow,
+  .animate-podium-glow-silver,
+  .animate-podium-glow-bronze,
+  .animate-podium-bounce,
+  .animate-drumroll-shake,
+  .animate-crown-bounce {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

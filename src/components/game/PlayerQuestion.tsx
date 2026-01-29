@@ -91,13 +91,13 @@ export function PlayerQuestion({
   if (hasAnswered) {
     return (
       <div 
-        className="flex min-h-[70vh] flex-col items-center justify-center p-4"
+        className="flex min-h-screen flex-col items-center justify-center p-4 pb-safe"
         role="status"
         aria-live="polite"
       >
         <Card className="w-full max-w-sm text-center">
           <CardHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
               <Check className="h-8 w-8 text-green-600" aria-hidden="true" />
             </div>
             <CardTitle className="text-2xl">Answer Locked In!</CardTitle>
@@ -114,7 +114,7 @@ export function PlayerQuestion({
 
   return (
     <div 
-      className="flex min-h-screen flex-col p-4"
+      className="flex min-h-screen flex-col p-4 pb-safe"
       role="region"
       aria-label={`Question ${questionIndex + 1} of ${totalQuestions}`}
       id={regionId}
@@ -122,18 +122,18 @@ export function PlayerQuestion({
       {/* Header with timer */}
       <div className="mb-4 space-y-2">
         <div className="flex items-center justify-between">
-          <Badge variant="secondary" aria-hidden="true">
+          <Badge variant="secondary" className="text-sm" aria-hidden="true">
             Question {questionIndex + 1} of {totalQuestions}
           </Badge>
           <div 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1"
             role="timer"
             aria-live="off"
             aria-label={`${timeLeft} seconds remaining`}
           >
             <Clock className="h-4 w-4" aria-hidden="true" />
             <span 
-              className={cn("font-bold", timeLeft <= 5 && "text-red-500")}
+              className={cn("font-bold text-lg", timeLeft <= 5 && "text-red-500")}
               aria-hidden="true"
             >
               {timeLeft}s
@@ -142,7 +142,7 @@ export function PlayerQuestion({
         </div>
         <Progress 
           value={progress} 
-          className="h-2" 
+          className="h-3" 
           aria-label={`Time remaining: ${timeLeft} seconds`}
         />
         {/* Screen reader announcement for low time */}
@@ -184,14 +184,16 @@ export function PlayerQuestion({
             aria-pressed={selectedOptionId === option.id}
             aria-label={`Option ${optionLabels[index]}: ${option.label}`}
             className={cn(
-              "min-h-[80px] text-lg font-semibold transition-transform active:scale-95 sm:min-h-[100px]",
+              "h-auto min-h-[100px] py-4 px-4 text-base sm:text-lg font-semibold transition-transform active:scale-[0.98] touch-manipulation",
               "focus-visible:ring-4 focus-visible:ring-offset-2",
+              "select-none !whitespace-normal text-center leading-snug",
+              "flex items-center justify-center",
               optionColors[index % optionColors.length],
               selectedOptionId === option.id && "ring-4 ring-white"
             )}
           >
             <span className="sr-only">{optionLabels[index]}:</span>
-            {option.label}
+            <span className="block w-full break-words overflow-hidden">{option.label}</span>
           </Button>
         ))}
       </div>

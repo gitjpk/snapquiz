@@ -13,6 +13,8 @@ import prisma from "@/lib/db/client";
 
 interface SubmitAnswerResponse {
   accepted: boolean;
+  isCorrect: boolean;
+  points: number;
 }
 
 export async function POST(
@@ -57,6 +59,8 @@ export async function POST(
 
     const response: SubmitAnswerResponse = {
       accepted: result.accepted,
+      isCorrect: result.isCorrect ?? false,
+      points: result.points ?? 0,
     };
 
     return jsonResponse(response);

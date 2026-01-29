@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Play, SkipForward, Eye, Trophy, Square, Loader2 } from "lucide-react";
+import { AudioToggle } from "./AudioToggle";
 
 type SessionStatus = "lobby" | "in_progress" | "ended";
 type PresenterState = "lobby" | "question" | "reveal" | "leaderboard" | "ended";
@@ -49,7 +50,14 @@ export function PresenterControls({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t border-slate-700 bg-slate-900/95 p-4 backdrop-blur">
-      <div className="container mx-auto flex items-center justify-center gap-4">
+      <div className="container mx-auto flex items-center justify-between">
+        {/* Left: Audio toggle */}
+        <div className="flex items-center">
+          <AudioToggle size="default" />
+        </div>
+
+        {/* Center: Main controls */}
+        <div className="flex items-center justify-center gap-4">
         {isLoading && (
           <Loader2 className="h-5 w-5 animate-spin text-white" />
         )}
@@ -149,6 +157,10 @@ export function PresenterControls({
             🎉 Game Complete!
           </span>
         )}
+        </div>
+
+        {/* Right: Spacer to balance layout */}
+        <div className="w-[100px]" />
       </div>
     </div>
   );

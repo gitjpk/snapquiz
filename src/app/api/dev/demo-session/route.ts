@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/db/client";
 import { createSession } from "@/lib/sessions/sessionService";
-import { jsonResponse, unauthorized, badRequest, internalError } from "@/lib/api/http";
+import { jsonResponse, unauthorized, internalError } from "@/lib/api/http";
 
 const DEMO_API_KEY = process.env.DEMO_API_KEY;
 

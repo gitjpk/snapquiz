@@ -1,13 +1,15 @@
 /**
  * Scoring algorithm for SnapQuiz
  * Awards points based on correctness and speed.
+ * 
+ * Formula: Points = MAX_POINTS * (timeRemaining / timeLimit)
+ * - Faster answers = more points
+ * - Answer at time 0 = 1000 points
+ * - Answer at time limit = 0 points
  */
 
-/** Maximum points for a correct answer */
+/** Maximum points for a correct answer (answered instantly) */
 export const MAX_POINTS = 1000;
-
-/** Minimum points for a correct answer (answered at the last second) */
-export const MIN_POINTS = 500;
 
 /** Points for an incorrect answer */
 export const INCORRECT_POINTS = 0;
@@ -15,10 +17,13 @@ export const INCORRECT_POINTS = 0;
 /**
  * Calculate points for an answer based on correctness and response time.
  * 
+ * Formula: Points = MAX_POINTS * (timeRemaining / timeLimit)
+ * Example: 30s limit, answered in 10s → Points = 1000 * (20/30) = 667
+ * 
  * @param isCorrect - Whether the answer was correct
  * @param responseTimeMs - Time taken to respond in milliseconds
  * @param timeLimitMs - Total time limit for the question in milliseconds
- * @returns Points awarded (0 for incorrect, 500-1000 for correct based on speed)
+ * @returns Points awarded (0 for incorrect, 0-1000 for correct based on speed)
  */
 export function calculatePoints(
   isCorrect: boolean,
@@ -32,13 +37,12 @@ export function calculatePoints(
   // Ensure time is within bounds
   const clampedTime = Math.max(0, Math.min(responseTimeMs, timeLimitMs));
   
-  // Calculate speed bonus (faster = more points)
-  // At time 0: full points (1000)
-  // At time limit: minimum points (500)
-  const speedRatio = 1 - clampedTime / timeLimitMs;
-  const speedBonus = Math.round((MAX_POINTS - MIN_POINTS) * speedRatio);
+  // Calculate time remaining ratio
+  const timeRemainingMs = timeLimitMs - clampedTime;
+  const timeRemainingRatio = timeRemainingMs / timeLimitMs;
   
-  return MIN_POINTS + speedBonus;
+  // Points = MAX_POINTS * (timeRemaining / timeLimit)
+  return Math.round(MAX_POINTS * timeRemainingRatio);
 }
 
 /**

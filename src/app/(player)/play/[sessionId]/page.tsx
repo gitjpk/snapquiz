@@ -6,7 +6,7 @@ import { PlayerLobby } from "@/components/game/PlayerLobby";
 import { PlayerQuestion } from "@/components/game/PlayerQuestion";
 import { AnswerReveal } from "@/components/game/AnswerReveal";
 import { Leaderboard } from "@/components/game/Leaderboard";
-import { Podium } from "@/components/game/Podium";
+import { AnimatedPodium, type PodiumParticipant } from "@/components/game/AnimatedPodium";
 import { useSessionSocket } from "@/lib/realtime/client";
 import {
   RealtimeEventType,
@@ -39,6 +39,16 @@ interface AnswerRevealData {
   distribution: AnswerDistribution[];
 }
 
+// Track points earned per question
+interface QuestionResult {
+  questionIndex: number;
+  questionPrompt: string;
+  isCorrect: boolean;
+  pointsEarned: number;
+  responseTimeMs: number;
+  timeLimitSeconds: number;
+}
+
 export default function PlayPage({
   params,
 }: {
@@ -50,7 +60,7 @@ export default function PlayPage({
   // Participant state
   const [participant, setParticipant] = useState<ParticipantInfo | null>(null);
   const [gameState, setGameState] = useState<GameState>("loading");
-  const [error, setError] = useState<string | null>(null);
+  const [_error, _setError] = useState<string | null>(null);
 
   // Game state
   const [participantCount, setParticipantCount] = useState(0);
@@ -63,6 +73,9 @@ export default function PlayPage({
   const [revealData, setRevealData] = useState<AnswerRevealData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [podium, setPodium] = useState<LeaderboardEntry[]>([]);
+  const [questionResults, setQuestionResults] = useState<QuestionResult[]>([]);
+  const [answerStartTime, setAnswerStartTime] = useState<number | null>(null);
+  const [_lastAnswerPoints, setLastAnswerPoints] = useState<number | null>(null);
 
   // Load participant from session storage
   useEffect(() => {
@@ -96,6 +109,8 @@ export default function PlayPage({
           setSelectedOptionId(null);
           setIsQuestionOpen(true);
           setRevealData(null);
+          setAnswerStartTime(Date.now());
+          setLastAnswerPoints(null);
           setGameState("question");
           break;
 
@@ -137,6 +152,9 @@ export default function PlayPage({
     async (optionId: string) => {
       if (!participant || !currentQuestion) return;
 
+      const answerTime = Date.now();
+      const responseTimeMs = answerStartTime ? answerTime - answerStartTime : 0;
+
       setSelectedOptionId(optionId);
       setGameState("answered");
 
@@ -151,7 +169,20 @@ export default function PlayPage({
           }),
         });
 
-        if (!res.ok) {
+        if (res.ok) {
+          const data = await res.json();
+          setLastAnswerPoints(data.points || 0);
+          
+          // Store the result for this question
+          setQuestionResults(prev => [...prev, {
+            questionIndex,
+            questionPrompt: currentQuestion.prompt,
+            isCorrect: data.isCorrect,
+            pointsEarned: data.points || 0,
+            responseTimeMs,
+            timeLimitSeconds: currentQuestion.timeLimitSeconds,
+          }]);
+        } else {
           const data = await res.json();
           console.error("Answer submission failed:", data.message);
         }
@@ -159,7 +190,7 @@ export default function PlayPage({
         console.error("Failed to submit answer:", err);
       }
     },
-    [participant, currentQuestion, sessionId]
+    [participant, currentQuestion, sessionId, answerStartTime, questionIndex]
   );
 
   // Loading state
@@ -180,7 +211,7 @@ export default function PlayPage({
             <CardTitle className="text-destructive">Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>{error || "Something went wrong"}</p>
+            <p>{_error || "Something went wrong"}</p>
           </CardContent>
         </Card>
       </main>
@@ -288,13 +319,96 @@ export default function PlayPage({
 
   // Game ended state
   if (gameState === "ended") {
+    // Convert leaderboard entries to PodiumParticipant format
+    const podiumParticipants: PodiumParticipant[] = podium.slice(0, 3).map((entry, index) => ({
+      id: entry.participantId,
+      name: entry.nickname,
+      score: entry.pointsTotal,
+      rank: (index + 1) as 1 | 2 | 3,
+    }));
+
+    // Check if current player is on podium
+    const currentPlayerRank = podiumParticipants.findIndex(
+      (p) => p.id === participant.participantId
+    );
+    const isOnPodium = currentPlayerRank !== -1;
+
+    // Calculate total points from results
+    const totalPoints = questionResults.reduce((sum, r) => sum + r.pointsEarned, 0);
+    const correctAnswers = questionResults.filter(r => r.isCorrect).length;
+
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <Podium
-            entries={podium}
-            currentParticipantId={participant.participantId}
+          <div className="text-center mb-6">
+            <span className="text-6xl">🏆</span>
+            <h2 className="mt-4 text-2xl font-bold">Final Results</h2>
+            {isOnPodium && (
+              <p className="text-primary mt-2">
+                🎉 Congratulations! You placed #{currentPlayerRank + 1}!
+              </p>
+            )}
+          </div>
+          <AnimatedPodium
+            participants={podiumParticipants}
+            isPresenter={false}
+            autoStart
+            isMobile
           />
+
+          {/* Score breakdown */}
+          {questionResults.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Your Score Breakdown</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {correctAnswers}/{questionResults.length} correct • {totalPoints.toLocaleString()} points
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {questionResults.map((result, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between rounded-lg border p-3 ${
+                      result.isCorrect 
+                        ? "border-green-200 bg-green-50" 
+                        : "border-red-200 bg-red-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                          result.isCorrect ? "bg-green-500" : "bg-red-500"
+                        }`}
+                      >
+                        {result.isCorrect ? (
+                          <Check className="h-4 w-4 text-white" />
+                        ) : (
+                          <X className="h-4 w-4 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Q{result.questionIndex + 1}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(result.responseTimeMs / 1000).toFixed(1)}s / {result.timeLimitSeconds}s
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold ${result.isCorrect ? "text-green-600" : "text-red-600"}`}>
+                        +{result.pointsEarned}
+                      </p>
+                      {result.isCorrect && (
+                        <p className="text-xs text-muted-foreground">
+                          {Math.round((1 - result.responseTimeMs / (result.timeLimitSeconds * 1000)) * 100)}% speed bonus
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
     );

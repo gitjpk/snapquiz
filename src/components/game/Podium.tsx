@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy } from "lucide-react";
+// Icons imported as needed
 import { cn } from "@/lib/utils";
 import type { LeaderboardEntry } from "@/lib/realtime/events";
 

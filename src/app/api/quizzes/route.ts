@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/client";
 import {
   jsonResponse,
@@ -6,6 +6,7 @@ import {
   parseJsonBody,
 } from "@/lib/api/http";
 import { CreateQuizRequestSchema } from "@/lib/validation/schemas";
+import { requireAuth } from "@/lib/auth/middleware";
 
 interface QuizListItem {
   id: string;
@@ -23,9 +24,13 @@ interface QuizResponse {
 
 /**
  * GET /api/quizzes
- * List all quizzes
+ * List all quizzes (requires authentication)
  */
 export async function GET(): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   const quizzes = await prisma.quiz.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -48,9 +53,13 @@ export async function GET(): Promise<Response> {
 
 /**
  * POST /api/quizzes
- * Create a new quiz with questions
+ * Create a new quiz with questions (requires authentication)
  */
 export async function POST(request: NextRequest): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   const parsed = await parseJsonBody(request, CreateQuizRequestSchema);
   if ("error" in parsed) {
     return parsed.error;

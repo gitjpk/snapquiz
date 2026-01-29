@@ -12,7 +12,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Play, Edit, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, Play, Edit, Loader2, Trash2 } from "lucide-react";
 
 interface Quiz {
   id: string;
@@ -22,11 +24,24 @@ interface Quiz {
   createdAt: string;
 }
 
+interface DeleteModalState {
+  isOpen: boolean;
+  quiz: Quiz | null;
+  confirmText: string;
+  isDeleting: boolean;
+}
+
 export default function QuizzesPage() {
   const router = useRouter();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startingSession, setStartingSession] = useState<string | null>(null);
+  const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
+    isOpen: false,
+    quiz: null,
+    confirmText: "",
+    isDeleting: false,
+  });
 
   useEffect(() => {
     fetchQuizzes();
@@ -66,6 +81,49 @@ export default function QuizzesPage() {
       alert("Failed to start session");
     } finally {
       setStartingSession(null);
+    }
+  };
+
+  const openDeleteModal = (quiz: Quiz) => {
+    setDeleteModal({
+      isOpen: true,
+      quiz,
+      confirmText: "",
+      isDeleting: false,
+    });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({
+      isOpen: false,
+      quiz: null,
+      confirmText: "",
+      isDeleting: false,
+    });
+  };
+
+  const handleDeleteQuiz = async () => {
+    if (!deleteModal.quiz) return;
+    if (deleteModal.confirmText !== deleteModal.quiz.title) return;
+
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
+
+    try {
+      const res = await fetch(`/api/quizzes/${deleteModal.quiz.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setQuizzes((prev) => prev.filter((q) => q.id !== deleteModal.quiz?.id));
+        closeDeleteModal();
+      } else {
+        alert("Failed to delete quiz");
+      }
+    } catch (error) {
+      console.error("Failed to delete quiz:", error);
+      alert("Failed to delete quiz");
+    } finally {
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -114,8 +172,16 @@ export default function QuizzesPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {quizzes.map((quiz) => (
-            <Card key={quiz.id} className="flex flex-col">
-              <CardHeader>
+            <Card key={quiz.id} className="flex flex-col relative">
+              {/* Delete button */}
+              <button
+                onClick={() => openDeleteModal(quiz)}
+                className="absolute top-3 right-3 p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                title="Delete quiz"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+              <CardHeader className="pr-10">
                 <CardTitle className="line-clamp-1">{quiz.title}</CardTitle>
                 {quiz.description && (
                   <CardDescription className="line-clamp-2">
@@ -161,6 +227,73 @@ export default function QuizzesPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && deleteModal.quiz && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeDeleteModal}
+          />
+          {/* Modal */}
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-red-600">Delete Quiz</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This action cannot be undone. This will permanently delete the quiz
+              and all associated data.
+            </p>
+            <div className="mt-4">
+              <Label htmlFor="confirm-delete" className="text-sm">
+                Type <span className="font-semibold">{deleteModal.quiz.title}</span> to confirm:
+              </Label>
+              <Input
+                id="confirm-delete"
+                type="text"
+                value={deleteModal.confirmText}
+                onChange={(e) =>
+                  setDeleteModal((prev) => ({
+                    ...prev,
+                    confirmText: e.target.value,
+                  }))
+                }
+                placeholder="Enter quiz name"
+                className="mt-2"
+                autoComplete="off"
+              />
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={closeDeleteModal}
+                disabled={deleteModal.isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteQuiz}
+                disabled={
+                  deleteModal.confirmText !== deleteModal.quiz.title ||
+                  deleteModal.isDeleting
+                }
+              >
+                {deleteModal.isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Quiz
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

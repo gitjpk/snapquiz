@@ -37,7 +37,10 @@ export function emitToSession(sessionId: string, event: RealtimeEvent): void {
 setEmitter(emitToSession);
 
 app.prepare().then(() => {
-  const httpServer = createServer((req, res) => {
+  const httpServer = createServer({
+    // Allow larger request bodies (50MB for document uploads)
+    maxHeaderSize: 16384,
+  }, (req, res) => {
     const parsedUrl = parse(req.url || "", true);
     handle(req, res, parsedUrl);
   });
