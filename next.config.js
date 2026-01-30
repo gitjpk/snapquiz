@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Enable standalone output for Docker deployment
+  output: 'standalone',
   // Allow larger file uploads (50MB) - for document parsing
   experimental: {
     serverActions: {
