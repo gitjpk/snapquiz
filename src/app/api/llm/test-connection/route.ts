@@ -4,15 +4,19 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/db/client";
 import {
   jsonResponse,
   parseJsonBody,
 } from "@/lib/api/http";
 import { TestConnectionRequestSchema } from "@/lib/validation/llmSchemas";
 import { requireAuth } from "@/lib/auth/middleware";
-import { createProvider } from "@/lib/llm/client";
+import { createProvider, decryptApiKey } from "@/lib/llm/client";
 import type { LLMProviderType } from "@/lib/llm/types";
 import { LLMError } from "@/lib/llm/errors";
+
+// Use a constant host ID for MVP (single host)
+const HOST_ID = "default-host";
 
 interface TestConnectionResponse {
   success: boolean;
@@ -23,6 +27,7 @@ interface TestConnectionResponse {
 /**
  * POST /api/llm/test-connection
  * Test LLM connection with provided credentials
+ * If no API key is provided, uses the existing saved key
  */
 export async function POST(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -36,11 +41,22 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const { provider, apiEndpoint, apiKey, model } = parsed.data;
 
+  // If no API key provided, try to get the existing one from database
+  let effectiveApiKey = apiKey || "";
+  if (!apiKey) {
+    const existingSettings = await prisma.lLMSettings.findUnique({
+      where: { hostId: HOST_ID },
+    });
+    if (existingSettings?.apiKey) {
+      effectiveApiKey = decryptApiKey(existingSettings.apiKey);
+    }
+  }
+
   try {
     const llmProvider = createProvider(
       provider as LLMProviderType,
       apiEndpoint,
-      apiKey || "", // API key is optional for local proxies
+      effectiveApiKey,
       model
     );
 

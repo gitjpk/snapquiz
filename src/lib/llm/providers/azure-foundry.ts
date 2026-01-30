@@ -22,7 +22,8 @@ interface AzureMessage {
 interface AzureCompletionRequest {
   model: string;
   messages: AzureMessage[];
-  max_tokens: number;
+  max_tokens?: number;
+  max_completion_tokens?: number;
   temperature?: number;
   response_format?: { type: "json_object" | "text" };
 }
@@ -69,14 +70,23 @@ export class AzureFoundryProvider implements LLMProvider {
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
     try {
+      // GPT-5.x, o1, o3 models use max_completion_tokens instead of max_tokens
+      // and don't support temperature (only default value 1)
+      const isReasoningModel = this.model.toLowerCase().includes('gpt-5') || 
+                                  this.model.toLowerCase().startsWith('o1') ||
+                                  this.model.toLowerCase().startsWith('o3');
+      
       const requestBody: AzureCompletionRequest = {
         model: this.model,
         messages: options.messages.map((m) => ({
           role: m.role,
           content: m.content,
         })),
-        max_tokens: options.maxTokens,
-        temperature: options.temperature ?? 0.7,
+        ...(isReasoningModel 
+          ? { max_completion_tokens: options.maxTokens }
+          : { max_tokens: options.maxTokens }),
+        // Reasoning models (GPT-5.x, o1, o3) don't support temperature parameter
+        ...(isReasoningModel ? {} : { temperature: options.temperature ?? 0.7 }),
       };
 
       if (options.responseFormat === "json") {
@@ -91,12 +101,6 @@ export class AzureFoundryProvider implements LLMProvider {
 
       // OpenAI-compatible endpoint: /openai/v1/chat/completions
       const url = `${this.endpoint}/chat/completions`;
-      
-      // Debug logging for Azure Foundry requests
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[Azure Foundry] Request URL:", url);
-        console.warn("[Azure Foundry] Model:", this.model);
-      }
 
       const response = await fetch(url, {
         method: "POST",
@@ -127,11 +131,6 @@ export class AzureFoundryProvider implements LLMProvider {
       let content = choice.message.content;
       if (content === null && choice.message.reasoning_content) {
         content = choice.message.reasoning_content;
-      }
-      
-      // Debug logging for response
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[Azure Foundry] Response content (first 500 chars):", content?.substring(0, 500));
       }
       
       if (content === null || content === undefined) {
@@ -177,25 +176,14 @@ export class AzureFoundryProvider implements LLMProvider {
 
   async testConnection(): Promise<{ success: boolean; modelName?: string }> {
     try {
-      // Debug logging for connection test
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[Azure Foundry] Testing connection to:", this.endpoint);
-        console.warn("[Azure Foundry] Model:", this.model);
-      }
-      
       // Try a minimal completion to test the connection
       const result = await this.complete({
         messages: [{ role: "user", content: "Hi" }],
         maxTokens: 5,
-        temperature: 0,
       });
       
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[Azure Foundry] Connection successful, model:", result.model);
-      }
       return { success: true, modelName: result.model };
-    } catch (error) {
-      console.error("[Azure Foundry] Connection failed:", error);
+    } catch {
       return { success: false };
     }
   }

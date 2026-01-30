@@ -24,11 +24,16 @@ Primary provider for SnapQuiz. Supports models deployed in Azure AI Foundry:
 
 - **Mistral-Large-3**: Fast, reliable JSON output
 - **DeepSeek-V3.2**: Good quality, cost-effective
-- **gpt-5.2-chat**: Latest GPT model
+- **gpt-5.2-chat**: Latest GPT reasoning model
 
 Uses OpenAI-compatible API format:
 - Endpoint: `https://<resource>.services.ai.azure.com/openai/v1`
 - Auth: `api-key` header
+
+**Note on reasoning models (GPT-5.x, o1, o3):**
+- Use `max_completion_tokens` instead of `max_tokens`
+- Don't support the `temperature` parameter (always uses default value 1)
+- The provider auto-detects these models and adjusts parameters accordingly
 
 ### OpenAI
 
