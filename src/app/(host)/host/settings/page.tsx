@@ -7,6 +7,9 @@ import { LLMSettings } from "@/components/settings/LLMSettings";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+// Force dynamic rendering - this page checks database state
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   // Check if password exists
   const credential = await prisma.hostCredential.findFirst();

@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db/client";
 import { validateSessionToken } from "@/lib/auth/session";
 import { LoginForm } from "@/components/auth/LoginForm";
 
+// Force dynamic rendering - this page checks database state
+export const dynamic = "force-dynamic";
+
 interface LoginPageProps {
   searchParams: Promise<{ expired?: string }>;
 }

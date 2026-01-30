@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { SetupForm } from "@/components/auth/SetupForm";
 
+// Force dynamic rendering - this page checks database state
+export const dynamic = "force-dynamic";
+
 export default async function SetupPage() {
   // Check if password already exists
   const credential = await prisma.hostCredential.findFirst();

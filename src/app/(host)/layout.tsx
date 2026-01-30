@@ -7,6 +7,9 @@ import { LogoutButton } from "@/components/auth/LogoutButton";
 import { HostClientLayout } from "@/components/auth/HostClientLayout";
 import { Settings } from "lucide-react";
 
+// Force dynamic rendering - this layout checks database state for auth
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Host - SnapQuiz",
   description: "Create and host live quiz games",
