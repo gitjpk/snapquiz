@@ -49,12 +49,16 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/server.ts ./server.ts
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
+# Copy source lib files needed by server.ts at runtime
+COPY --from=builder /app/src/lib ./src/lib
 
 # Create data directory for SQLite (with persistent storage)
 RUN mkdir -p /app/data
 
-# Install only production dependencies needed for custom server
-RUN npm install --omit=dev tsx socket.io
+# Install dependencies needed for custom server and Prisma
+RUN npm install --omit=dev tsx socket.io effect
 
 # Set permissions (including data directory for SQLite)
 RUN chown -R nextjs:nodejs /app
