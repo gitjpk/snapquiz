@@ -50,10 +50,13 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/server.ts ./server.ts
 COPY --from=builder /app/package.json ./package.json
 
+# Create data directory for SQLite (with persistent storage)
+RUN mkdir -p /app/data
+
 # Install only production dependencies needed for custom server
 RUN npm install --omit=dev tsx socket.io
 
-# Set permissions
+# Set permissions (including data directory for SQLite)
 RUN chown -R nextjs:nodejs /app
 
 USER nextjs
@@ -67,5 +70,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/auth/status || exit 1
 
-# Start the custom server
-CMD ["npx", "tsx", "server.ts"]
+# Start script: run migrations then start server
+CMD npx prisma db push --skip-generate && npx tsx server.ts
