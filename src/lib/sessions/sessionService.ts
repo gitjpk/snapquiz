@@ -19,6 +19,16 @@ import { calculatePointsFromTimestamps } from "@/lib/scoring/scoring";
 declare global {
   // eslint-disable-next-line no-var
   var __socketEmitter: ((sessionId: string, event: RealtimeEvent) => void) | undefined;
+  // eslint-disable-next-line no-var
+  var __revealInProgress: Set<string> | undefined;
+}
+
+// Track which session+question combinations have a reveal in progress
+function getRevealTracker(): Set<string> {
+  if (!globalThis.__revealInProgress) {
+    globalThis.__revealInProgress = new Set();
+  }
+  return globalThis.__revealInProgress;
 }
 
 /**
@@ -572,6 +582,40 @@ export async function submitAnswer(
         },
       },
     });
+  }
+
+  // Check if all active participants have answered
+  const activeParticipantCount = await prisma.participant.count({
+    where: { sessionId, status: "active" },
+  });
+
+  const responsesForQuestion = await prisma.response.count({
+    where: { sessionId, questionId },
+  });
+
+  // Auto-reveal if all participants have answered
+  if (responsesForQuestion >= activeParticipantCount && activeParticipantCount > 0) {
+    const revealKey = `${sessionId}:${questionId}`;
+    const tracker = getRevealTracker();
+    
+    // Prevent duplicate reveals
+    if (!tracker.has(revealKey)) {
+      tracker.add(revealKey);
+      
+      // Use setTimeout to avoid blocking the response
+      // and to give a small delay for UI feedback
+      setTimeout(async () => {
+        try {
+          await closeQuestion(sessionId);
+          await revealAnswer(sessionId);
+        } catch (error) {
+          console.error("Auto-reveal failed:", error);
+        } finally {
+          // Clean up after reveal is done
+          tracker.delete(revealKey);
+        }
+      }, 500); // 500ms delay for smooth transition
+    }
   }
 
   return {
