@@ -54,14 +54,15 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 # Copy source lib files needed by server.ts at runtime
 COPY --from=builder /app/src/lib ./src/lib
 
-# Create data directory for SQLite (with persistent storage)
-RUN mkdir -p /app/data
+# Create data directory for SQLite in /home (Azure persistent storage)
+# Note: /home is the only persistent directory in Azure Web App for Containers
+RUN mkdir -p /home/data
 
 # Install dependencies needed for custom server and Prisma
 RUN npm install --omit=dev tsx socket.io effect
 
-# Set permissions (including data directory for SQLite)
-RUN chown -R nextjs:nodejs /app
+# Set permissions (including /home/data for SQLite)
+RUN chown -R nextjs:nodejs /app /home/data
 
 USER nextjs
 
