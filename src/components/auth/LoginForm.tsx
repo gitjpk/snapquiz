@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 interface LoginFormProps {
   sessionExpired?: boolean;
@@ -14,6 +15,7 @@ interface LoginFormProps {
 
 export function LoginForm({ sessionExpired = false }: LoginFormProps) {
   const _router = useRouter();
+  const { t } = useTranslations();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +26,7 @@ export function LoginForm({ sessionExpired = false }: LoginFormProps) {
 
     // Client-side validation
     if (!password.trim()) {
-      setError("Password cannot be empty");
+      setError(t.auth.enterPassword);
       return;
     }
 
@@ -41,9 +43,9 @@ export function LoginForm({ sessionExpired = false }: LoginFormProps) {
 
       if (!response.ok) {
         if (response.status === 429) {
-          setError("Too many login attempts. Please try again in a minute.");
+          setError(t.errors.generic);
         } else {
-          setError(data.message || "Login failed");
+          setError(data.message || t.auth.invalidPassword);
         }
         return;
       }
@@ -52,7 +54,7 @@ export function LoginForm({ sessionExpired = false }: LoginFormProps) {
       // Use window.location for full page reload to ensure cookies are sent correctly
       window.location.href = "/host/quizzes";
     } catch {
-      setError("An unexpected error occurred");
+      setError(t.errors.generic);
     } finally {
       setIsLoading(false);
     }
@@ -61,28 +63,28 @@ export function LoginForm({ sessionExpired = false }: LoginFormProps) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Host Login</CardTitle>
+        <CardTitle>{t.auth.loginTitle}</CardTitle>
         <CardDescription>
-          Enter your password to access the host area.
+          {t.auth.loginDescription}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {sessionExpired && (
           <div className="mb-4 flex items-center gap-2 rounded-md bg-amber-50 p-3 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <p className="text-sm">Your session has expired. Please log in again.</p>
+            <p className="text-sm">{t.errors.sessionExpired}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t.auth.password}</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t.auth.enterPassword}
               required
               disabled={isLoading}
               aria-describedby={error ? "error-message" : undefined}
@@ -97,7 +99,7 @@ export function LoginForm({ sessionExpired = false }: LoginFormProps) {
           )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? t.auth.loggingIn : t.auth.login}
           </Button>
         </form>
       </CardContent>

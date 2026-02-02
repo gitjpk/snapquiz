@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 export function SetupForm() {
   const router = useRouter();
+  const { t } = useTranslations();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +22,17 @@ export function SetupForm() {
 
     // Client-side validation
     if (!password.trim()) {
-      setError("Password cannot be empty or whitespace only");
+      setError(t.auth.enterPassword);
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+      setError(t.auth.passwordTooShort);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(t.auth.passwordMismatch);
       return;
     }
 
@@ -46,7 +48,7 @@ export function SetupForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Setup failed");
+        setError(data.message || t.errors.generic);
         return;
       }
 
@@ -54,7 +56,7 @@ export function SetupForm() {
       router.push("/host/quizzes");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred");
+      setError(t.errors.generic);
     } finally {
       setIsLoading(false);
     }
@@ -63,21 +65,21 @@ export function SetupForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Set Up Host Password</CardTitle>
+        <CardTitle>{t.auth.setupTitle}</CardTitle>
         <CardDescription>
-          Create a password to protect the host area. This is a one-time setup.
+          {t.auth.setupDescription}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t.auth.password}</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password (min 8 characters)"
+              placeholder={t.auth.enterPassword}
               required
               minLength={8}
               disabled={isLoading}
@@ -86,13 +88,13 @@ export function SetupForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">{t.auth.confirmPassword}</Label>
             <Input
               id="confirmPassword"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your password"
+              placeholder={t.auth.confirmPassword}
               required
               disabled={isLoading}
             />
@@ -105,7 +107,7 @@ export function SetupForm() {
           )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Setting up..." : "Create Password"}
+            {isLoading ? t.auth.settingUp : t.common.save}
           </Button>
         </form>
       </CardContent>

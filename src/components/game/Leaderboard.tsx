@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LeaderboardEntry } from "@/lib/realtime/events";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 interface LeaderboardProps {
   /** Leaderboard entries (already sorted by rank) */
@@ -29,6 +30,7 @@ export function Leaderboard({
   isPresenter = false,
   previousEntries,
 }: LeaderboardProps) {
+  const { t } = useTranslations();
   const displayEntries = entries.slice(0, maxEntries);
 
   // Calculate rank changes if previous entries are provided
@@ -51,7 +53,7 @@ export function Leaderboard({
       <div className="flex items-center justify-center gap-2">
         <Trophy className={cn("text-yellow-500", isPresenter ? "h-8 w-8" : "h-6 w-6")} />
         <h2 className={cn("font-bold", isPresenter ? "text-3xl" : "text-xl")}>
-          Leaderboard
+          {t.game.leaderboard}
         </h2>
       </div>
 
@@ -137,7 +139,7 @@ export function Leaderboard({
               >
                 {entry.pointsTotal.toLocaleString()}{" "}
                 <span className="text-sm font-normal text-muted-foreground">
-                  pts
+                  {t.game.points}
                 </span>
               </span>
             </div>
@@ -148,7 +150,7 @@ export function Leaderboard({
       {/* Show more indicator */}
       {entries.length > maxEntries && (
         <p className="text-center text-sm text-muted-foreground">
-          +{entries.length - maxEntries} more players
+          +{entries.length - maxEntries} {t.game.player}
         </p>
       )}
     </div>

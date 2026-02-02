@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 interface JoinFormProps {
   /** Called when form is submitted with PIN and nickname */
@@ -30,6 +31,7 @@ export function JoinForm({
   isLoading = false,
   error = null,
 }: JoinFormProps) {
+  const { t } = useTranslations();
   const [pin, setPin] = useState(initialPin);
   const [nickname, setNickname] = useState("");
   
@@ -59,10 +61,10 @@ export function JoinForm({
     <Card className="w-full max-w-sm mx-auto" role="region" aria-label="Join quiz form">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl sm:text-3xl\" id={`${formId}-title`}>
-          Join Quiz
+          {t.game.joinGame}
         </CardTitle>
         <CardDescription id={`${formId}-desc`}>
-          Enter the game PIN and choose your nickname
+          {t.game.enterPin}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,13 +75,13 @@ export function JoinForm({
           aria-describedby={error ? errorId : `${formId}-desc`}
         >
           <div className="space-y-2">
-            <Label htmlFor={pinId} className="text-base">Game PIN</Label>
+            <Label htmlFor={pinId} className="text-base">{t.game.enterPin}</Label>
             <Input
               id={pinId}
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              placeholder="Enter 6-digit PIN"
+              placeholder="123456"
               value={pin}
               onChange={handlePinChange}
               className="h-16 text-center text-3xl tracking-[0.3em] font-mono touch-manipulation"
@@ -97,11 +99,11 @@ export function JoinForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={nicknameId} className="text-base">Nickname</Label>
+            <Label htmlFor={nicknameId} className="text-base">{t.game.enterNickname}</Label>
             <Input
               id={nicknameId}
               type="text"
-              placeholder="Your name"
+              placeholder={t.game.enterNickname}
               value={nickname}
               onChange={(e) => setNickname(e.target.value.slice(0, 24))}
               className="h-14 text-xl touch-manipulation"
@@ -135,7 +137,7 @@ export function JoinForm({
             disabled={!isValid || isLoading}
             aria-busy={isLoading}
           >
-            {isLoading ? "Joining..." : "Join Game"}
+            {isLoading ? t.game.joining : t.game.join}
           </Button>
         </form>
       </CardContent>

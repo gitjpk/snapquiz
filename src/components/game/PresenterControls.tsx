@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Play, SkipForward, Eye, Trophy, Square, Loader2 } from "lucide-react";
 import { AudioToggle } from "./AudioToggle";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 type SessionStatus = "lobby" | "in_progress" | "ended";
 type PresenterState = "lobby" | "question" | "reveal" | "leaderboard" | "ended";
@@ -46,6 +47,7 @@ export function PresenterControls({
   onEndGame,
   isLoading,
 }: PresenterControlsProps) {
+  const { t } = useTranslations();
   const isLastQuestion = questionIndex >= totalQuestions - 1;
 
   return (
@@ -71,7 +73,7 @@ export function PresenterControls({
             className="bg-green-600 hover:bg-green-700"
           >
             <Play className="mr-2 h-5 w-5" />
-            Start Game
+            {t.game.startGame}
           </Button>
         )}
 
@@ -84,7 +86,7 @@ export function PresenterControls({
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Eye className="mr-2 h-5 w-5" />
-            Reveal Answer
+            {t.game.showAnswer}
           </Button>
         )}
 
@@ -98,7 +100,7 @@ export function PresenterControls({
               className="bg-purple-600 hover:bg-purple-700"
             >
               <Trophy className="mr-2 h-5 w-5" />
-              Show Leaderboard
+              {t.game.showLeaderboard}
             </Button>
             {!isLastQuestion ? (
               <Button
@@ -108,7 +110,7 @@ export function PresenterControls({
                 className="bg-green-600 hover:bg-green-700"
               >
                 <SkipForward className="mr-2 h-5 w-5" />
-                Next Question
+                {t.game.nextQuestion}
               </Button>
             ) : (
               <Button
@@ -118,7 +120,7 @@ export function PresenterControls({
                 className="bg-orange-600 hover:bg-orange-700"
               >
                 <Square className="mr-2 h-5 w-5" />
-                End Game
+                {t.game.endGame}
               </Button>
             )}
           </div>
@@ -135,7 +137,7 @@ export function PresenterControls({
                 className="bg-green-600 hover:bg-green-700"
               >
                 <SkipForward className="mr-2 h-5 w-5" />
-                Next Question
+                {t.game.nextQuestion}
               </Button>
             ) : (
               <Button
@@ -145,7 +147,7 @@ export function PresenterControls({
                 className="bg-orange-600 hover:bg-orange-700"
               >
                 <Square className="mr-2 h-5 w-5" />
-                End Game
+                {t.game.endGame}
               </Button>
             )}
           </>
@@ -154,7 +156,7 @@ export function PresenterControls({
         {/* Game ended */}
         {presenterState === "ended" && (
           <span className="text-lg font-semibold text-white">
-            🎉 Game Complete!
+            🎉 {t.game.finalResults}
           </span>
         )}
         </div>
