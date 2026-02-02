@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AIWizard } from "@/components/quiz/AIWizard";
 import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
-import type { GeneratedQuestion } from "@/lib/llm/types";
 
 type CreationMode = "select" | "manual" | "ai";
 
@@ -47,25 +46,6 @@ export default function NewQuizPage() {
     }
     checkSettings();
   }, []);
-
-  const handleAIComplete = (
-    generatedQuestions: GeneratedQuestion[],
-    suggestedTitle?: string
-  ) => {
-    // Convert to form format
-    const formQuestions: QuestionForm[] = generatedQuestions.map((q) => ({
-      prompt: q.prompt,
-      options: q.options,
-      correctOptionIndex: q.correctOptionIndex,
-      timeLimitSeconds: q.timeLimitSeconds,
-    }));
-
-    setQuestions(formQuestions);
-    if (suggestedTitle) {
-      setTitle(suggestedTitle);
-    }
-    setMode("manual"); // Switch to manual mode for final editing
-  };
 
   const handleSaveQuiz = async () => {
     if (!title.trim()) {
@@ -208,7 +188,6 @@ export default function NewQuizPage() {
       {mode === "ai" && (
         <AIWizard
           hasLLMSettings={hasLLMSettings}
-          onComplete={handleAIComplete}
           onCancel={() => setMode("select")}
           onConfigureLLM={() => router.push("/host/settings")}
         />

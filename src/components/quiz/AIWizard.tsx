@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -30,20 +31,19 @@ interface TokenUsage {
 }
 
 interface AIWizardProps {
-  onComplete: (questions: GeneratedQuestion[], title?: string) => void;
   onCancel: () => void;
   hasLLMSettings: boolean;
   onConfigureLLM: () => void;
 }
 
-type WizardStep = "source" | "generating" | "review";
+type WizardStep = "source" | "generating" | "review" | "saving";
 
 export function AIWizard({
-  onComplete,
   onCancel,
   hasLLMSettings,
   onConfigureLLM,
 }: AIWizardProps) {
+  const router = useRouter();
   const [step, setStep] = useState<WizardStep>("source");
   const [source, setSource] = useState<GenerationSource | null>(null);
   const [questionCount, setQuestionCount] = useState(5);
@@ -242,13 +242,55 @@ export function AIWizard({
     setGeneratedQuestions((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     // Generate a title from the source
     let title = "AI Generated Quiz";
     if (source?.type === "topic") {
       title = source.value.slice(0, 50) + (source.value.length > 50 ? "..." : "");
+    } else if (source?.type === "url") {
+      // Extract domain or use a generic title
+      try {
+        const url = new URL(source.value);
+        title = `Quiz from ${url.hostname}`;
+      } catch {
+        title = "Quiz from URL";
+      }
+    } else if (source?.type === "document") {
+      title = "Quiz from Document";
     }
-    onComplete(generatedQuestions, title);
+
+    setStep("saving");
+    setError(null);
+
+    try {
+      // Create the quiz directly via API
+      const response = await fetch("/api/quizzes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          questions: generatedQuestions.map((q) => ({
+            prompt: q.prompt,
+            options: q.options,
+            correctOptionIndex: q.correctOptionIndex,
+            timeLimitSeconds: q.timeLimitSeconds,
+          })),
+        }),
+      });
+
+      if (response.ok) {
+        const { id } = await response.json();
+        // Redirect directly to edit page
+        router.push(`/host/quizzes/${id}`);
+      } else {
+        const data = await response.json();
+        setError(data.message || "Failed to save quiz");
+        setStep("review");
+      }
+    } catch {
+      setError("Failed to save quiz");
+      setStep("review");
+    }
   };
 
   return (
@@ -262,6 +304,7 @@ export function AIWizard({
           {step === "source" && "Choose a source and options for your quiz"}
           {step === "generating" && "Generating questions..."}
           {step === "review" && "Review and edit generated questions"}
+          {step === "saving" && "Creating your quiz..."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -343,6 +386,12 @@ export function AIWizard({
 
         {step === "review" && (
           <>
+            {error && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <p>{error}</p>
+              </div>
+            )}
+
             {warnings.length > 0 && (
               <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                 {warnings.map((warning, i) => (
@@ -371,6 +420,15 @@ export function AIWizard({
               </Button>
             </div>
           </>
+        )}
+
+        {step === "saving" && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">
+              Creating your quiz...
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
