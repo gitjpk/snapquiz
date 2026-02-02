@@ -9,11 +9,15 @@ A real-time live quiz game application inspired by Kahoot, built with Next.js 15
 - **QR Code Join**: Scan to join instantly from mobile devices
 - **Real-time Updates**: Live participant list, answer tracking, and leaderboards
 - **Timer with Auto-Reveal**: Configurable question timers with automatic answer reveal
+- **Auto-Reveal on All Answers**: Automatically shows answer when all players have responded
 - **Scoring System**: Points based on correctness and response speed
 - **Presenter View**: Full-screen display for projectors/screens
 - **Mobile-Friendly Player View**: Optimized for phones and tablets
 - **AI Quiz Generation**: Generate quizzes from topics, documents, or URLs
 - **Animated Podium**: Celebration sequence with confetti for top 3 players
+- **Multi-language Support**: Full i18n support for English and French
+- **Dark Mode**: Light/Dark/System theme options
+- **Accent Colors**: 6 customizable accent color themes
 
 ## 🤖 AI Quiz Generation
 
@@ -41,12 +45,15 @@ SnapQuiz includes AI-powered quiz generation that allows you to create quizzes f
 
 ### Usage
 1. Go to **Create Quiz** (`/host/quizzes/new`)
-2. Choose "Generate with AI"
+2. Choose "AI Generation"
 3. Select your source type and enter content
 4. Choose question count (1-20) and difficulty (Easy/Medium/Hard)
 5. Select language (English or French)
 6. Click "Generate Questions"
-7. Review, edit time limits (15-120s presets), and save
+7. Review and edit the generated questions
+8. Click "Use These Questions" - the quiz is created and you're redirected to the edit page
+9. Adjust title, descriptions, and time limits as needed
+10. Save and start your quiz!
 
 ## 🛠️ Tech Stack
 
@@ -87,7 +94,10 @@ snapquiz/
 │   ├── components/
 │   │   ├── auth/          # Login, setup forms
 │   │   ├── game/          # Game-specific components
-│   │   ├── settings/      # LLM settings panel
+│   │   ├── layout/        # Navigation components
+│   │   ├── providers/     # Context providers (settings, i18n)
+│   │   ├── quiz/          # AI wizard, question editors
+│   │   ├── settings/      # LLM & site settings panels
 │   │   └── ui/            # shadcn/ui components
 │   ├── hooks/             # Custom React hooks
 │   └── lib/
@@ -95,6 +105,7 @@ snapquiz/
 │       ├── auth/          # JWT, password hashing
 │       ├── audio/         # Podium audio management
 │       ├── db/            # Prisma client
+│       ├── i18n/          # Translations (en/fr)
 │       ├── llm/           # LLM providers (Azure, OpenAI, Anthropic)
 │       ├── parsing/       # Document parsing (PDF, DOCX, etc.)
 │       ├── realtime/      # Socket.IO events & client hook
@@ -338,7 +349,41 @@ $env:USE_HTTPS_COOKIES="true"; npm run dev
 - Uses SQLite for simplicity (swap to PostgreSQL for production)
 - Session PINs are 6-digit numbers, unique per active session
 - Timer auto-reveal triggers when countdown reaches zero
+- Auto-reveal also triggers when all participants have answered
 - Azure AI Foundry uses OpenAI-compatible API format
+
+## 🌐 Internationalization (i18n)
+
+SnapQuiz supports multiple languages:
+
+| Language | Code | Status |
+|----------|------|--------|
+| English | `en` | ✅ Complete |
+| French | `fr` | ✅ Complete |
+
+### Changing Language
+
+1. Go to **Settings** (`/host/settings`)
+2. In "Site Settings", select your preferred language
+3. The entire UI will update immediately
+
+### Adding New Languages
+
+1. Edit `src/lib/i18n/translations.ts`
+2. Add a new locale key with all translation strings
+3. Update the `Locale` type
+
+## 🎨 Theming
+
+### Theme Options
+- **Light**: Classic light theme
+- **Dark**: Dark mode for low-light environments
+- **System**: Follows your OS preference
+
+### Accent Colors
+Choose from 6 accent colors: Blue, Purple, Green, Orange, Pink, Red
+
+Configure in **Settings** → **Site Settings**
 
 ## 📄 License
 
