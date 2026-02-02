@@ -33,10 +33,10 @@ Ce guide explique comment déployer SnapQuiz sur Azure Web App for Containers.
 
 ```bash
 # Variables
-RESOURCE_GROUP="snapquiz-rg"
+RESOURCE_GROUP="rg-snapquiz"
 LOCATION="westeurope"
 WEBAPP_NAME="snapquiz"
-PLAN_NAME="snapquiz-plan"
+PLAN_NAME="plan-snapquiz"
 
 # Créer le resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION

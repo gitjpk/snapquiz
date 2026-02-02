@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/client";
 import { validateSessionToken } from "@/lib/auth/session";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { LLMSettings } from "@/components/settings/LLMSettings";
+import { SiteSettingsCard } from "@/components/settings/SiteSettingsCard";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -46,12 +47,14 @@ export default async function SettingsPage() {
 
       <div className="space-y-6">
         <section>
-          <h2 className="text-lg font-semibold mb-4">AI Quiz Generation</h2>
+          <SiteSettingsCard />
+        </section>
+
+        <section>
           <LLMSettings />
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-4">Security</h2>
           <ChangePasswordForm />
         </section>
       </div>

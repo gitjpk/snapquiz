@@ -59,6 +59,90 @@
   }
 }
 
+/* ===========================================
+   Accent Color Themes
+   =========================================== */
+
+/* Blue accent (default) */
+:root.accent-blue,
+:root:not([class*="accent-"]) {
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 221.2 83.2% 53.3%;
+}
+
+.dark.accent-blue,
+.dark:not([class*="accent-"]) {
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --ring: 224.3 76.3% 48%;
+}
+
+/* Purple accent */
+:root.accent-purple {
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 262.1 83.3% 57.8%;
+}
+
+.dark.accent-purple {
+  --primary: 263.4 70% 50.4%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 263.4 70% 50.4%;
+}
+
+/* Green accent */
+:root.accent-green {
+  --primary: 142.1 76.2% 36.3%;
+  --primary-foreground: 355.7 100% 97.3%;
+  --ring: 142.1 76.2% 36.3%;
+}
+
+.dark.accent-green {
+  --primary: 142.1 70.6% 45.3%;
+  --primary-foreground: 144.9 80.4% 10%;
+  --ring: 142.1 70.6% 45.3%;
+}
+
+/* Orange accent */
+:root.accent-orange {
+  --primary: 24.6 95% 53.1%;
+  --primary-foreground: 60 9.1% 97.8%;
+  --ring: 24.6 95% 53.1%;
+}
+
+.dark.accent-orange {
+  --primary: 20.5 90.2% 48.2%;
+  --primary-foreground: 60 9.1% 97.8%;
+  --ring: 20.5 90.2% 48.2%;
+}
+
+/* Pink accent */
+:root.accent-pink {
+  --primary: 330.4 81.2% 60.4%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 330.4 81.2% 60.4%;
+}
+
+.dark.accent-pink {
+  --primary: 330.4 81.2% 60.4%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 330.4 81.2% 60.4%;
+}
+
+/* Red accent */
+:root.accent-red {
+  --primary: 0 84.2% 60.2%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 0 84.2% 60.2%;
+}
+
+.dark.accent-red {
+  --primary: 0 72.2% 50.6%;
+  --primary-foreground: 210 40% 98%;
+  --ring: 0 72.2% 50.6%;
+}
+
 @layer base {
   * {
     @apply border-border;

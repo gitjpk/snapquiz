@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SiteSettingsProvider } from "@/components/providers/SiteSettingsProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
-        {children}
+        <SiteSettingsProvider>
+          {children}
+        </SiteSettingsProvider>
       </body>
     </html>
   );

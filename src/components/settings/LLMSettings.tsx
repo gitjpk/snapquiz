@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 type LLMProvider = "openai" | "anthropic" | "azure-foundry";
 
@@ -30,6 +31,7 @@ const DEFAULT_ENDPOINTS: Record<LLMProvider, string> = {
 };
 
 export function LLMSettings() {
+  const { t } = useTranslations();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -92,12 +94,12 @@ export function LLMSettings() {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess("Connection successful!");
+        setSuccess(t.llm.connectionSuccess);
       } else {
-        setError(data.error || "Connection failed");
+        setError(data.error || t.llm.connectionFailed);
       }
     } catch (err) {
-      setError("Failed to test connection");
+      setError(t.llm.connectionFailed);
       console.error("Test connection error:", err);
     } finally {
       setIsTesting(false);
@@ -127,15 +129,15 @@ export function LLMSettings() {
       if (response.ok) {
         const data = await response.json();
         setDetectedModel(data.detectedModel);
-        setSuccess("Settings saved successfully!");
+        setSuccess(t.llm.settingsSaved);
         setApiKey(""); // Clear the API key field
         setHasExistingSettings(true);
       } else {
         const data = await response.json();
-        setError(data.message || "Failed to save settings");
+        setError(data.message || t.common.error);
       }
     } catch (err) {
-      setError("Failed to save settings");
+      setError(t.common.error);
       console.error("Save settings error:", err);
     } finally {
       setIsSaving(false);
@@ -155,7 +157,7 @@ export function LLMSettings() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI Quiz Generation</CardTitle>
+        <CardTitle>{t.llm.title}</CardTitle>
         <CardDescription>
           Configure your LLM provider to enable AI-powered quiz generation
         </CardDescription>
@@ -163,7 +165,7 @@ export function LLMSettings() {
       <CardContent className="space-y-4">
         {/* Provider Selection */}
         <div className="space-y-2">
-          <Label htmlFor="provider">Provider</Label>
+          <Label htmlFor="provider">{t.llm.provider}</Label>
           <select
             id="provider"
             value={provider}
@@ -179,7 +181,7 @@ export function LLMSettings() {
         {/* Model Selection (Azure AI Foundry only) */}
         {provider === "azure-foundry" && (
           <div className="space-y-2">
-            <Label htmlFor="model">Model</Label>
+            <Label htmlFor="model">{t.llm.model}</Label>
             <select
               id="model"
               value={model}
@@ -197,7 +199,7 @@ export function LLMSettings() {
 
         {/* API Endpoint */}
         <div className="space-y-2">
-          <Label htmlFor="apiEndpoint">API Endpoint</Label>
+          <Label htmlFor="apiEndpoint">{t.llm.apiEndpoint}</Label>
           <Input
             id="apiEndpoint"
             type="url"
@@ -212,15 +214,13 @@ export function LLMSettings() {
 
         {/* API Key */}
         <div className="space-y-2">
-          <Label htmlFor="apiKey">
-            API Key {hasExistingSettings ? "(leave blank to keep existing)" : "(optional for local proxies)"}
-          </Label>
+          <Label htmlFor="apiKey">{t.llm.apiKey}</Label>
           <Input
             id="apiKey"
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={hasExistingSettings ? "••••••••••••••••" : "Enter API key (optional)"}
+            placeholder={t.llm.apiKeyPlaceholder}
           />
         </div>
 
@@ -257,20 +257,20 @@ export function LLMSettings() {
             {isTesting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Testing...
+                {t.llm.testing}
               </>
             ) : (
-              "Test Connection"
+              t.llm.testConnection
             )}
           </Button>
           <Button onClick={handleSave} disabled={isTesting || isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Saving...
+                {t.llm.saving}
               </>
             ) : (
-              "Save Settings"
+              t.llm.saveSettings
             )}
           </Button>
         </div>
