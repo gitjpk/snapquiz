@@ -31,7 +31,7 @@ const DEFAULT_ENDPOINTS: Record<LLMProvider, string> = {
 };
 
 export function LLMSettings() {
-  const { t } = useTranslations();
+  const t = useTranslations();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -159,7 +159,7 @@ export function LLMSettings() {
       <CardHeader>
         <CardTitle>{t.llm.title}</CardTitle>
         <CardDescription>
-          Configure your LLM provider to enable AI-powered quiz generation
+          {t.llm.description}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -25,6 +25,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users } from "lucide-react";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 type PresenterState = "loading" | "lobby" | "question" | "reveal" | "leaderboard" | "ended";
 
@@ -56,6 +57,7 @@ export default function PresenterPage({
 }) {
   const { sessionId } = use(params);
   const _router = useRouter();
+  const t = useTranslations();
 
   // Session state
   const [session, setSession] = useState<SessionData | null>(null);
@@ -273,11 +275,11 @@ export default function PresenterPage({
       {/* Header */}
       <header className="border-b border-slate-700 bg-slate-800 p-4">
         <div className="container mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold">SnapQuiz Presenter</h1>
+          <h1 className="text-xl font-bold">{t.game.presenterTitle}</h1>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              <span>{participantCount} players</span>
+              <span>{participantCount} {t.game.players}</span>
             </div>
             {!isConnected && (
               <Badge variant="destructive">Disconnected</Badge>
@@ -298,7 +300,7 @@ export default function PresenterPage({
         {presenterState === "lobby" && session && (
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold">Waiting for Players</h2>
+              <h2 className="text-3xl font-bold">{t.game.waitingForPlayers}</h2>
             </div>
 
             <div className="mx-auto max-w-2xl space-y-8">
@@ -307,7 +309,7 @@ export default function PresenterPage({
                 <Card className="border-slate-700 bg-slate-800">
                   <CardHeader>
                     <CardTitle className="text-center text-white">
-                      Scan to Join
+                      {t.game.scanToJoin}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex justify-center">
@@ -318,7 +320,7 @@ export default function PresenterPage({
                 <Card className="border-slate-700 bg-slate-800">
                   <CardHeader>
                     <CardTitle className="text-center text-white">
-                      Or enter PIN
+                      {t.game.orEnterPin}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col items-center gap-4">
@@ -327,7 +329,7 @@ export default function PresenterPage({
                         {session.pin}
                       </p>
                     </div>
-                    <p className="text-slate-400">at snapquiz.app/join</p>
+                    <p className="text-slate-400">{t.game.atJoinUrl}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -338,7 +340,7 @@ export default function PresenterPage({
                   <Users className="h-6 w-6" />
                   <span className="text-2xl font-bold">{participantCount}</span>
                   <span className="text-slate-400">
-                    {participantCount === 1 ? "player" : "players"} joined
+                    {participantCount === 1 ? t.game.playerJoined : t.game.playersJoined}
                   </span>
                 </div>
               </div>
@@ -378,7 +380,7 @@ export default function PresenterPage({
 
             <div className="text-center">
               <Badge variant="secondary" className="mb-4 text-lg">
-                Question {questionIndex + 1} of {totalQuestions}
+                {t.game.questionOf.replace("{current}", String(questionIndex + 1)).replace("{total}", String(totalQuestions))}
               </Badge>
               <h2 className="text-4xl font-bold">{currentQuestion.prompt}</h2>
             </div>
@@ -442,7 +444,7 @@ export default function PresenterPage({
           <div className="mx-auto max-w-2xl">
             <div className="text-center mb-8">
               <span className="text-8xl">🏆</span>
-              <h2 className="mt-4 text-4xl font-bold">Final Results</h2>
+              <h2 className="mt-4 text-4xl font-bold">{t.game.finalResults}</h2>
             </div>
             <AnimatedPodium
               participants={podiumParticipants}

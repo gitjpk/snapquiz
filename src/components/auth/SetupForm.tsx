@@ -10,7 +10,7 @@ import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 export function SetupForm() {
   const router = useRouter();
-  const { t } = useTranslations();
+  const t = useTranslations();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

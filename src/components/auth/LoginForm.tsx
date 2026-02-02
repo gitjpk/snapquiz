@@ -15,7 +15,7 @@ interface LoginFormProps {
 
 export function LoginForm({ sessionExpired = false }: LoginFormProps) {
   const _router = useRouter();
-  const { t } = useTranslations();
+  const t = useTranslations();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

@@ -31,7 +31,7 @@ export function JoinForm({
   isLoading = false,
   error = null,
 }: JoinFormProps) {
-  const { t } = useTranslations();
+  const t = useTranslations();
   const [pin, setPin] = useState(initialPin);
   const [nickname, setNickname] = useState("");
   

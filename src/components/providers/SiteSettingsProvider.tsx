@@ -165,6 +165,6 @@ export function useSiteSettings() {
 
 // Hook for just translations (convenience)
 export function useTranslations() {
-  const { t, locale } = useSiteSettings();
-  return { t, locale };
+  const { t } = useSiteSettings();
+  return t;
 }

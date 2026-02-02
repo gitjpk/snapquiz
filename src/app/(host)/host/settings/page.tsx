@@ -5,8 +5,7 @@ import { validateSessionToken } from "@/lib/auth/session";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { LLMSettings } from "@/components/settings/LLMSettings";
 import { SiteSettingsCard } from "@/components/settings/SiteSettingsCard";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { SettingsPageClient } from "@/components/settings/SettingsPageClient";
 
 // Force dynamic rendering - this page checks database state
 export const dynamic = "force-dynamic";
@@ -34,30 +33,10 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
-      <Link 
-        href="/host/quizzes" 
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to quizzes
-      </Link>
-
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
-
-      <div className="space-y-6">
-        <section>
-          <SiteSettingsCard />
-        </section>
-
-        <section>
-          <LLMSettings />
-        </section>
-
-        <section>
-          <ChangePasswordForm />
-        </section>
-      </div>
-    </div>
+    <SettingsPageClient>
+      <SiteSettingsCard />
+      <LLMSettings />
+      <ChangePasswordForm />
+    </SettingsPageClient>
   );
 }

@@ -9,7 +9,7 @@ import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 export function LogoutButton() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { t } = useTranslations();
+  const t = useTranslations();
 
   const handleLogout = async () => {
     setIsLoading(true);

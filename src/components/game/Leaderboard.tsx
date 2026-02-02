@@ -30,7 +30,7 @@ export function Leaderboard({
   isPresenter = false,
   previousEntries,
 }: LeaderboardProps) {
-  const { t } = useTranslations();
+  const t = useTranslations();
   const displayEntries = entries.slice(0, maxEntries);
 
   // Calculate rank changes if previous entries are provided

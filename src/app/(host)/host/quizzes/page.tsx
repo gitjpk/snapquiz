@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Play, Edit, Loader2, Trash2 } from "lucide-react";
+import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 
 interface Quiz {
   id: string;
@@ -33,6 +34,7 @@ interface DeleteModalState {
 
 export default function QuizzesPage() {
   const router = useRouter();
+  const t = useTranslations();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startingSession, setStartingSession] = useState<string | null>(null);
@@ -139,15 +141,15 @@ export default function QuizzesPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">My Quizzes</h1>
+          <h1 className="text-3xl font-bold">{t.quizzes.title}</h1>
           <p className="text-muted-foreground">
-            Create and manage your quiz games
+            {t.quizzes.subtitle}
           </p>
         </div>
         <Button asChild>
           <Link href="/host/quizzes/new">
             <Plus className="mr-2 h-4 w-4" />
-            Create Quiz
+            {t.quizzes.createQuiz}
           </Link>
         </Button>
       </div>
@@ -155,16 +157,16 @@ export default function QuizzesPage() {
       {quizzes.length === 0 ? (
         <Card className="text-center">
           <CardHeader>
-            <CardTitle>No quizzes yet</CardTitle>
+            <CardTitle>{t.quizzes.noQuizzes}</CardTitle>
             <CardDescription>
-              Create your first quiz to get started
+              {t.quizzes.createFirst}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
               <Link href="/host/quizzes/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Quiz
+                {t.quizzes.createQuiz}
               </Link>
             </Button>
           </CardContent>
@@ -177,7 +179,7 @@ export default function QuizzesPage() {
               <button
                 onClick={() => openDeleteModal(quiz)}
                 className="absolute top-3 right-3 p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                title="Delete quiz"
+                title={t.quizzes.deleteQuiz}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -193,7 +195,7 @@ export default function QuizzesPage() {
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">
                     {quiz.questionCount}{" "}
-                    {quiz.questionCount === 1 ? "question" : "questions"}
+                    {quiz.questionCount === 1 ? t.quizzes.question : t.quizzes.questions}
                   </Badge>
                 </div>
                 <div className="flex gap-2">
@@ -205,7 +207,7 @@ export default function QuizzesPage() {
                   >
                     <Link href={`/host/quizzes/${quiz.id}`}>
                       <Edit className="mr-2 h-4 w-4" />
-                      Edit
+                      {t.common.edit}
                     </Link>
                   </Button>
                   <Button
@@ -221,7 +223,7 @@ export default function QuizzesPage() {
                     ) : (
                       <Play className="mr-2 h-4 w-4" />
                     )}
-                    Start
+                    {t.quizzes.start}
                   </Button>
                 </div>
               </CardContent>
@@ -239,15 +241,14 @@ export default function QuizzesPage() {
             onClick={closeDeleteModal}
           />
           {/* Modal */}
-          <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-red-600">Delete Quiz</h2>
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-slate-800">
+            <h2 className="text-lg font-semibold text-red-600">{t.quizzes.deleteQuiz}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              This action cannot be undone. This will permanently delete the quiz
-              and all associated data.
+              {t.quizzes.deleteAction}
             </p>
             <div className="mt-4">
               <Label htmlFor="confirm-delete" className="text-sm">
-                Type <span className="font-semibold">{deleteModal.quiz.title}</span> to confirm:
+                {t.quizzes.typeToConfirm.replace("{title}", deleteModal.quiz.title)}
               </Label>
               <Input
                 id="confirm-delete"
@@ -259,7 +260,7 @@ export default function QuizzesPage() {
                     confirmText: e.target.value,
                   }))
                 }
-                placeholder="Enter quiz name"
+                placeholder={t.quizzes.enterQuizName}
                 className="mt-2"
                 autoComplete="off"
               />
@@ -270,7 +271,7 @@ export default function QuizzesPage() {
                 onClick={closeDeleteModal}
                 disabled={deleteModal.isDeleting}
               >
-                Cancel
+                {t.common.cancel}
               </Button>
               <Button
                 variant="destructive"
@@ -283,12 +284,12 @@ export default function QuizzesPage() {
                 {deleteModal.isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting...
+                    {t.quizzes.deleting}
                   </>
                 ) : (
                   <>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Quiz
+                    {t.quizzes.deleteQuiz}
                   </>
                 )}
               </Button>

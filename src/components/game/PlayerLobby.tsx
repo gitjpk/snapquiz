@@ -19,7 +19,7 @@ export function PlayerLobby({
   participantCount,
   pin,
 }: PlayerLobbyProps) {
-  const { t } = useTranslations();
+  const t = useTranslations();
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4 pb-safe">

@@ -47,7 +47,7 @@ export function PresenterControls({
   onEndGame,
   isLoading,
 }: PresenterControlsProps) {
-  const { t } = useTranslations();
+  const t = useTranslations();
   const isLastQuestion = questionIndex >= totalQuestions - 1;
 
   return (
