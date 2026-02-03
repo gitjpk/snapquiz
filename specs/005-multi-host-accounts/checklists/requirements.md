@@ -2,6 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning  
 **Created**: 2026-02-03  
+**Updated**: 2026-02-03 (OAuth avec Microsoft Entra ID)  
 **Feature**: [spec.md](spec.md)
 
 ## Content Quality
@@ -33,7 +34,10 @@
 
 - Specification ready for `/speckit.plan` phase
 - Key decisions made:
-  - Email-based authentication (no OAuth for MVP)
+  - **Microsoft Entra ID (OAuth 2.0)** pour l'authentification
+  - Création automatique du compte à la première connexion
+  - Identifiant unique = Microsoft oid claim
   - Single user role (formateur) - no admin hierarchy
   - Full data isolation between hosts
   - Each host manages their own LLM settings
+- Prérequis : Enregistrer l'app dans Microsoft Entra ID (Azure Portal)

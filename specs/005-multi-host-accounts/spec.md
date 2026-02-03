@@ -9,42 +9,29 @@
 
 Cette fonctionnalité transforme SnapQuiz d'une application mono-utilisateur en une plateforme multi-formateurs. Chaque formateur (host) dispose de son propre espace isolé avec ses quiz, ses sessions, et ses paramètres LLM.
 
+L'authentification se fait via **Microsoft Entra ID (OAuth 2.0)**, permettant aux formateurs de se connecter avec leur compte Microsoft professionnel ou personnel.
+
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Inscription d'un nouveau formateur (Priority: P1)
+### User Story 1 - Connexion via Microsoft (Priority: P1)
 
-Un nouveau formateur souhaite créer son compte pour utiliser SnapQuiz avec ses propres quiz.
+Un formateur souhaite se connecter à SnapQuiz en utilisant son compte Microsoft.
 
-**Why this priority**: Sans inscription, aucun nouveau formateur ne peut accéder à la plateforme. C'est le point d'entrée obligatoire.
+**Why this priority**: L'authentification est le point d'entrée obligatoire. Microsoft Entra ID simplifie l'onboarding (pas de mot de passe à créer/mémoriser).
 
-**Independent Test**: Un utilisateur peut s'inscrire, se connecter et accéder à un tableau de bord vide prêt à créer des quiz.
-
-**Acceptance Scenarios**:
-
-1. **Given** je suis sur la page d'accueil, **When** je clique sur "S'inscrire", **Then** je vois un formulaire d'inscription
-2. **Given** le formulaire d'inscription, **When** je remplis email/mot de passe valides et soumets, **Then** mon compte est créé et je suis redirigé vers mon tableau de bord
-3. **Given** le formulaire d'inscription, **When** je soumets un email déjà utilisé, **Then** je vois un message d'erreur "Cet email est déjà utilisé"
-4. **Given** le formulaire d'inscription, **When** je soumets un mot de passe trop faible, **Then** je vois les critères de sécurité requis
-
----
-
-### User Story 2 - Connexion d'un formateur existant (Priority: P1)
-
-Un formateur existant veut se connecter pour accéder à ses quiz.
-
-**Why this priority**: La connexion est aussi critique que l'inscription pour l'accès à la plateforme.
-
-**Independent Test**: Un formateur peut se connecter et retrouver tous ses quiz existants.
+**Independent Test**: Un utilisateur peut se connecter via Microsoft et accéder à son tableau de bord.
 
 **Acceptance Scenarios**:
 
-1. **Given** je suis sur la page de connexion, **When** j'entre des identifiants valides, **Then** je suis connecté et redirigé vers mon tableau de bord
-2. **Given** je suis sur la page de connexion, **When** j'entre un mot de passe incorrect, **Then** je vois "Email ou mot de passe incorrect"
-3. **Given** je suis connecté, **When** ma session expire, **Then** je suis redirigé vers la page de connexion
+1. **Given** je suis sur la page d'accueil, **When** je clique sur "Se connecter avec Microsoft", **Then** je suis redirigé vers la page de connexion Microsoft
+2. **Given** la page Microsoft, **When** j'entre mes identifiants Microsoft valides, **Then** je suis redirigé vers mon tableau de bord SnapQuiz
+3. **Given** c'est ma première connexion, **When** je me connecte avec succès, **Then** mon compte formateur est automatiquement créé
+4. **Given** je me suis déjà connecté avant, **When** je me reconnecte, **Then** je retrouve tous mes quiz existants
+5. **Given** la page Microsoft, **When** j'annule la connexion, **Then** je reviens sur la page d'accueil avec un message explicatif
 
 ---
 
-### User Story 3 - Isolation des données par formateur (Priority: P1)
+### User Story 2 - Isolation des données par formateur (Priority: P1)
 
 Chaque formateur ne voit que ses propres quiz et sessions. Aucun accès aux données d'autres formateurs.
 
@@ -60,7 +47,7 @@ Chaque formateur ne voit que ses propres quiz et sessions. Aucun accès aux donn
 
 ---
 
-### User Story 4 - Paramètres LLM par formateur (Priority: P2)
+### User Story 3 - Paramètres LLM par formateur (Priority: P2)
 
 Chaque formateur peut configurer sa propre clé API LLM pour la génération de quiz IA.
 
@@ -76,68 +63,63 @@ Chaque formateur peut configurer sa propre clé API LLM pour la génération de 
 
 ---
 
-### User Story 5 - Mot de passe oublié (Priority: P2)
+### User Story 4 - Déconnexion (Priority: P2)
 
-Un formateur qui a oublié son mot de passe peut le réinitialiser.
+Un formateur connecté souhaite se déconnecter de l'application.
 
-**Why this priority**: Fonctionnalité standard attendue, mais pas critique pour le MVP initial.
+**Why this priority**: Fonctionnalité standard de sécurité.
 
-**Independent Test**: Un formateur peut demander une réinitialisation et définir un nouveau mot de passe.
+**Independent Test**: Un formateur peut se déconnecter et doit se reconnecter pour accéder à son espace.
 
 **Acceptance Scenarios**:
 
-1. **Given** je suis sur la page de connexion, **When** je clique "Mot de passe oublié", **Then** je peux entrer mon email
-2. **Given** j'ai demandé une réinitialisation, **When** je reçois l'email, **Then** le lien me permet de définir un nouveau mot de passe
-3. **Given** j'ai un lien de réinitialisation, **When** le lien a expiré (>1h), **Then** je vois un message d'expiration
+1. **Given** je suis connecté, **When** je clique sur "Déconnexion", **Then** ma session est terminée et je suis redirigé vers la page d'accueil
+2. **Given** je viens de me déconnecter, **When** j'essaie d'accéder à /host/quizzes, **Then** je suis redirigé vers la page de connexion
 
 ---
 
-### User Story 6 - Profil formateur (Priority: P3)
+### User Story 5 - Profil formateur (Priority: P3)
 
-Un formateur peut personnaliser son profil (nom affiché, avatar optionnel).
+Un formateur peut voir son profil (nom, email depuis Microsoft).
 
-**Why this priority**: Nice-to-have pour la personnalisation, non essentiel au fonctionnement.
+**Why this priority**: Nice-to-have pour la personnalisation, non essentiel au fonctionnement. Le profil est principalement alimenté par Microsoft.
 
-**Independent Test**: Un formateur peut modifier son nom affiché et le voir dans l'interface.
+**Independent Test**: Un formateur peut voir son nom et email récupérés de Microsoft.
 
 **Acceptance Scenarios**:
 
-1. **Given** je suis connecté, **When** je vais sur mon profil, **Then** je peux modifier mon nom d'affichage
-2. **Given** j'ai modifié mon nom, **When** je crée un quiz, **Then** mon nouveau nom apparaît comme auteur
+1. **Given** je suis connecté, **When** je vais sur mon profil, **Then** je vois mon nom et email Microsoft
+2. **Given** je suis connecté, **When** je regarde la navbar, **Then** je vois mon nom ou avatar Microsoft
 
 ---
 
 ### Edge Cases
 
-- Que se passe-t-il si un formateur supprime son compte ? (Les quiz et sessions sont archivés ou supprimés ?)
-- Comment gérer les sessions actives si un formateur se déconnecte ?
-- Un formateur peut-il avoir plusieurs sessions de navigateur simultanées ?
-- Limite du nombre de quiz par formateur ? (pour éviter les abus)
+- Que se passe-t-il si Microsoft Entra ID est temporairement indisponible ?
+- Comment gérer un utilisateur qui révoque l'accès SnapQuiz dans son compte Microsoft ?
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Le système DOIT permettre l'inscription via email et mot de passe
-- **FR-002**: Le système DOIT valider la force du mot de passe (min 8 caractères, 1 majuscule, 1 chiffre)
-- **FR-003**: Le système DOIT confirmer l'email via un lien de vérification
-- **FR-004**: Le système DOIT permettre la connexion via email/mot de passe
+- **FR-001**: Le système DOIT permettre la connexion via Microsoft Entra ID (OAuth 2.0 / OpenID Connect)
+- **FR-002**: Le système DOIT créer automatiquement un compte formateur à la première connexion Microsoft
+- **FR-003**: Le système DOIT récupérer le nom et email depuis le profil Microsoft
+- **FR-004**: Le système DOIT utiliser l'identifiant Microsoft (oid) comme identifiant unique du formateur
 - **FR-005**: Le système DOIT isoler complètement les données entre formateurs (quiz, sessions, participants, paramètres)
 - **FR-006**: Le système DOIT associer chaque quiz à un seul formateur propriétaire
 - **FR-007**: Le système DOIT rejeter toute tentative d'accès aux ressources d'un autre formateur
 - **FR-008**: Le système DOIT permettre à chaque formateur de configurer ses propres paramètres LLM
-- **FR-009**: Le système DOIT permettre la réinitialisation de mot de passe par email
-- **FR-010**: Le système DOIT invalider les sessions après 7 jours d'inactivité
-- **FR-011**: Le système DOIT permettre la déconnexion (suppression du token de session)
-- **FR-012**: Le système DOIT hasher les mots de passe avant stockage (bcrypt)
+- **FR-009**: Le système DOIT maintenir une session côté serveur après authentification OAuth
+- **FR-010**: Le système DOIT permettre la déconnexion (invalidation de la session locale)
+- **FR-011**: Le système DOIT rediriger vers Microsoft login si la session est expirée ou invalide
 
 ### Key Entities
 
-- **Host (Formateur)**: Représente un utilisateur formateur avec email, mot de passe hashé, nom d'affichage, et date de création
+- **Host (Formateur)**: Représente un utilisateur formateur avec microsoftId (oid), email, nom d'affichage, et date de création
 - **Quiz**: Appartient à un seul Host (relation many-to-one). Un formateur peut avoir plusieurs quiz
 - **Session**: Appartient au quiz qui lui-même appartient à un Host. Hérite l'ownership
 - **LLMSettings**: Associé à un Host spécifique (relation one-to-one)
-- **PasswordResetToken**: Token temporaire lié à un Host pour la réinitialisation
 
 ## Success Criteria *(mandatory)*
 
@@ -151,15 +133,18 @@ Un formateur peut personnaliser son profil (nom affiché, avatar optionnel).
 
 ## Assumptions
 
-- L'email sera utilisé comme identifiant unique (pas de username séparé)
-- Un formateur = un compte email (pas de comptes partagés)
-- Les formateurs existants (si migration) seront invités à créer un mot de passe
-- L'envoi d'emails utilise un service externe (SMTP ou API comme SendGrid/Resend)
+- L'identifiant Microsoft (oid claim) sera utilisé comme identifiant unique du formateur
+- Un formateur = un compte Microsoft (pas de comptes partagés)
+- L'application sera enregistrée dans Microsoft Entra ID (Azure AD)
+- Les scopes demandés : openid, profile, email
+- Le flow OAuth utilisé : Authorization Code Flow avec PKCE
 
 ## Out of Scope
 
-- Authentification OAuth (Google, Microsoft) - peut être ajouté plus tard
+- Authentification email/mot de passe (remplacée par Microsoft OAuth)
+- Autres providers OAuth (Google, GitHub) - Microsoft uniquement pour le MVP
 - Rôles multiples (admin vs formateur) - une seule classe d'utilisateur pour l'instant
 - Partage de quiz entre formateurs
 - Facturation/abonnements
 - Équipes/organisations de formateurs
+- Restriction par tenant Microsoft (tous les comptes Microsoft acceptés)
