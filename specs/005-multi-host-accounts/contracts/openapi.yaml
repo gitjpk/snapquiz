@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: SnapQuiz Auth API - Multi-Host
+  version: 2.0.0
+  description: |
+    Authentication endpoints for multi-host SnapQuiz.
+    Uses Microsoft Entra ID (OAuth 2.0) for authentication.
+
+servers:
+  - url: /api
+    description: API routes
+
+paths:
+  /auth/login:
+    get:
+      summary: Initiate Microsoft OAuth login
+      description: |
+        Redirects to Microsoft login page.
+        After successful authentication, redirects to /api/auth/callback.
+      tags: [Authentication]
+      parameters:
+        - name: returnTo
+          in: query
+          description: URL to redirect after successful login
+          schema:
+            type: string
+            default: /host/quizzes
+      responses:
+        "302":
+          description: Redirect to Microsoft login
+          headers:
+            Location:
+              schema:
+                type: string
+                example: https://login.microsoftonline.com/common/oauth2/v2.0/authorize?...
+
+  /auth/callback:
+    get:
+      summary: OAuth callback from Microsoft
+      description: |
+        Handles the OAuth callback from Microsoft Entra ID.
+        Creates or updates Host record, issues session token.
+      tags: [Authentication]
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: Authorization code from Microsoft
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: State parameter for CSRF protection
+          schema:
+            type: string
+        - name: error
+          in: query
+          description: Error code if authentication failed
+          schema:
+            type: string
+        - name: error_description
+          in: query
+          description: Error description
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to application (success or error)
+          headers:
+            Location:
+              schema:
+                type: string
+            Set-Cookie:
+              description: Session cookie (on success)
+              schema:
+                type: string
+
+  /auth/logout:
+    post:
+      summary: Logout current session
+      description: Revokes the current session and clears the cookie.
+      tags: [Authentication]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/status:
+    get:
+      summary: Get current authentication status
+      description: Returns information about the currently logged in host.
+      tags: [Authentication]
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Authentication status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: host_session
+      description: JWT session token
+
+  schemas:
+    AuthStatus:
+      type: object
+      required:
+        - isAuthenticated
+      properties:
+        isAuthenticated:
+          type: boolean
+        host:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "clx123abc"
+            email:
+              type: string
+              format: email
+              example: "formateur@example.com"
+            displayName:
+              type: string
+              example: "Jean Formateur"
+      example:
+        isAuthenticated: true
+        host:
+          id: "clx123abc"
+          email: "formateur@example.com"
+          displayName: "Jean Formateur"
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+      example:
+        error: "Authentication required"
+
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "Authentication required"
+
+    Forbidden:
+      description: Access to resource denied
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "Access denied"
+
+tags:
+  - name: Authentication
+    description: OAuth authentication with Microsoft Entra ID
