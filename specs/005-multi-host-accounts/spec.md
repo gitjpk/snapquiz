@@ -96,7 +96,19 @@ Un formateur peut voir son profil (nom, email depuis Microsoft).
 ### Edge Cases
 
 - Que se passe-t-il si Microsoft Entra ID est temporairement indisponible ?
+  - → Afficher message d'erreur "Service de connexion temporairement indisponible, réessayez"
 - Comment gérer un utilisateur qui révoque l'accès SnapQuiz dans son compte Microsoft ?
+  - → La prochaine tentative d'accès redirigera vers Microsoft pour re-consentir
+
+## Clarifications
+
+### Session 2026-02-03
+
+- Q: Migration des données existantes (default-host) ? → A: Supprimer les données existantes (reset complet)
+- Q: Durée d'expiration de session ? → A: 7 jours d'inactivité
+- Q: Réponse aux accès non autorisés ? → A: 403 "Non autorisé"
+- Q: Comportement si Microsoft Entra ID indisponible ? → A: Message d'erreur clair avec invitation à réessayer
+- Q: Formateur sans clé LLM configurée ? → A: Bouton visible mais redirige vers paramètres LLM avec explication
 
 ## Requirements *(mandatory)*
 
@@ -108,11 +120,14 @@ Un formateur peut voir son profil (nom, email depuis Microsoft).
 - **FR-004**: Le système DOIT utiliser l'identifiant Microsoft (oid) comme identifiant unique du formateur
 - **FR-005**: Le système DOIT isoler complètement les données entre formateurs (quiz, sessions, participants, paramètres)
 - **FR-006**: Le système DOIT associer chaque quiz à un seul formateur propriétaire
-- **FR-007**: Le système DOIT rejeter toute tentative d'accès aux ressources d'un autre formateur
+- **FR-007**: Le système DOIT retourner une erreur 403 pour toute tentative d'accès aux ressources d'un autre formateur
 - **FR-008**: Le système DOIT permettre à chaque formateur de configurer ses propres paramètres LLM
-- **FR-009**: Le système DOIT maintenir une session côté serveur après authentification OAuth
+- **FR-009**: Le système DOIT maintenir une session côté serveur après authentification OAuth (expiration: 7 jours d'inactivité)
 - **FR-010**: Le système DOIT permettre la déconnexion (invalidation de la session locale)
 - **FR-011**: Le système DOIT rediriger vers Microsoft login si la session est expirée ou invalide
+- **FR-012**: Le système DOIT afficher un message d'erreur clair si Microsoft Entra ID est indisponible
+- **FR-013**: Le système DOIT rediriger vers les paramètres LLM si un formateur sans clé tente de générer un quiz IA
+- **FR-014**: La migration DOIT supprimer les données existantes (reset complet)
 
 ### Key Entities
 
