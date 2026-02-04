@@ -15,7 +15,7 @@ import {
 } from "@/lib/api/http";
 import { HostControlRequestSchema } from "@/lib/validation/schemas";
 import prisma from "@/lib/db/client";
-import { requireAuth } from "@/lib/auth/middleware";
+import { requireAuth, verifyOwnership, forbiddenResponse } from "@/lib/auth/middleware";
 
 interface HostControlResponse {
   ok: boolean;
@@ -25,6 +25,8 @@ interface HostControlResponse {
  * POST /api/sessions/[sessionId]/control
  * Host control endpoint (start/next/reveal/leaderboard/end)
  * Protected by session authentication
+ * Session's quiz must be owned by the authenticated host
+ * Reference: specs/005-multi-host-accounts/spec.md - FR-007 ownership check
  */
 export async function POST(
   request: NextRequest,
@@ -44,14 +46,25 @@ export async function POST(
 
   const { action } = parsed.data;
 
-  // Check session exists
+  // Check session exists and get ownership info via quiz
   const session = await prisma.liveSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, status: true },
+    select: { 
+      id: true, 
+      status: true,
+      quiz: {
+        select: { ownerHostId: true }
+      }
+    },
   });
 
   if (!session) {
     return notFound("Session");
+  }
+
+  // Verify ownership via quiz (FR-007: return 403 for unauthorized access)
+  if (!await verifyOwnership(auth, session.quiz.ownerHostId)) {
+    return forbiddenResponse();
   }
 
   try {

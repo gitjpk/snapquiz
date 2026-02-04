@@ -187,7 +187,7 @@ export class PlayerSimulator {
         
       case "answer.reveal":
         // Store correct answer for stats
-        this.correctOptionId = (event as { correctOptionId: string }).correctOptionId;
+        this.correctOptionId = (event as unknown as { correctOptionId: string }).correctOptionId;
         break;
         
       case "game.ended":

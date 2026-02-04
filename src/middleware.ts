@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
  * Next.js Middleware for host route protection
  * 
  * Protects all /host/* routes and /presenter/* routes
- * Redirects to /login if not authenticated, or /setup if not set up
+ * Redirects to /login if not authenticated
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,7 +18,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/join") ||
     pathname.startsWith("/play") ||
     pathname === "/login" ||
-    pathname === "/setup" ||
     pathname.startsWith("/_next") ||
     pathname.includes(".")
   ) {
@@ -50,11 +49,6 @@ export async function middleware(request: NextRequest) {
     }
 
     const status = await response.json();
-
-    // If not set up, redirect to setup page
-    if (!status.isSetup) {
-      return NextResponse.redirect(new URL("/setup", request.url));
-    }
 
     // If not authenticated, redirect to login
     if (!status.isAuthenticated) {

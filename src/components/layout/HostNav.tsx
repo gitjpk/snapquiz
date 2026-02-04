@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import { useTranslations } from "@/components/providers/SiteSettingsProvider";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
 interface HostNavProps {
   isAuthenticated: boolean;
+  hostName?: string | null;
 }
 
-export function HostNav({ isAuthenticated }: HostNavProps) {
+export function HostNav({ isAuthenticated, hostName }: HostNavProps) {
   const t = useTranslations();
 
   return (
@@ -35,7 +36,16 @@ export function HostNav({ isAuthenticated }: HostNavProps) {
             </Link>
           )}
         </nav>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-4">
+          {isAuthenticated && hostName && (
+            <Link
+              href="/host/profile"
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+            >
+              <User className="h-4 w-4" />
+              {hostName}
+            </Link>
+          )}
           {isAuthenticated && <LogoutButton />}
         </div>
       </div>

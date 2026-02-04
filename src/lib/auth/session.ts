@@ -3,39 +3,46 @@ import { prisma } from "@/lib/db/client";
 
 /**
  * JWT session management using jose
- * Reference: specs/002-host-password-protection/research.md
+ * Reference: specs/005-multi-host-accounts/research.md
  *
  * Security:
  * - HTTP-only cookies prevent XSS token theft
- * - 24-hour expiration per FR-004
+ * - 7-day expiration per clarification
  * - Token revocation checked against HostSession table
+ * - JWT contains hostId for data isolation
  */
 
 // Session configuration
-const SESSION_TTL_HOURS = 24;
+const SESSION_TTL_DAYS = 7;
 const COOKIE_NAME = "host_session";
 
+// JWT secret - use environment variable or generate a default for development
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET || process.env.LLM_KEY_ENCRYPTION_SECRET || "development-jwt-secret-change-in-production";
+  return new TextEncoder().encode(secret);
+}
+
 export interface SessionPayload extends JWTPayload {
-  jti: string; // Token ID for revocation
-  iat: number; // Issued at
-  exp: number; // Expiration
+  jti: string;   // Token ID for revocation
+  hostId: string; // Host ID for data isolation
+  iat: number;   // Issued at
+  exp: number;   // Expiration
 }
 
 /**
  * Create a new JWT session token
- * @param jwtSecret - Secret from HostCredential (base64 encoded)
  * @param tokenId - Unique token ID (stored in HostSession)
- * @returns Signed JWT string
+ * @param hostId - Host ID for data isolation
+ * @returns Signed JWT string and expiration date
  */
 export async function createSessionToken(
-  jwtSecret: string,
-  tokenId: string
+  tokenId: string,
+  hostId: string
 ): Promise<{ token: string; expiresAt: Date }> {
-  // Use TextEncoder for jose compatibility (jose expects Uint8Array from text)
-  const secret = new TextEncoder().encode(jwtSecret);
-  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000);
+  const secret = getJwtSecret();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
 
-  const token = await new SignJWT({ jti: tokenId })
+  const token = await new SignJWT({ jti: tokenId, hostId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expiresAt)
@@ -47,16 +54,13 @@ export async function createSessionToken(
 /**
  * Validate a JWT session token
  * @param token - JWT string from cookie
- * @param jwtSecret - Secret from HostCredential (base64 encoded)
  * @returns Decoded payload if valid, null if invalid/expired/revoked
  */
 export async function validateSessionToken(
-  token: string,
-  jwtSecret: string
+  token: string
 ): Promise<SessionPayload | null> {
   try {
-    // Use TextEncoder for jose compatibility
-    const secret = new TextEncoder().encode(jwtSecret);
+    const secret = getJwtSecret();
     const { payload } = await jwtVerify(token, secret);
 
     // Check if token has been revoked
@@ -95,14 +99,30 @@ export async function revokeSession(tokenId: string): Promise<void> {
 }
 
 /**
+ * Revoke all sessions for a host (logout from all devices)
+ * @param hostId - Host ID
+ */
+export async function revokeAllSessions(hostId: string): Promise<void> {
+  await prisma.hostSession.updateMany({
+    where: { 
+      hostId,
+      revokedAt: null,
+    },
+    data: { revokedAt: new Date() },
+  });
+}
+
+/**
  * Create a session record in the database
  * @param tokenId - Unique token ID (JWT jti)
+ * @param hostId - Host ID
  * @param expiresAt - When the session expires
  * @param ipAddress - Client IP (optional)
  * @param userAgent - Browser user agent (optional)
  */
 export async function createSessionRecord(
   tokenId: string,
+  hostId: string,
   expiresAt: Date,
   ipAddress?: string,
   userAgent?: string
@@ -110,6 +130,7 @@ export async function createSessionRecord(
   await prisma.hostSession.create({
     data: {
       tokenId,
+      hostId,
       expiresAt,
       ipAddress,
       userAgent,

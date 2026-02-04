@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db/client";
 import {
   validateSessionToken,
   revokeSession,
@@ -10,6 +9,7 @@ import {
 /**
  * POST /api/auth/logout
  * Revoke current session and clear cookie
+ * Reference: specs/005-multi-host-accounts/contracts/openapi.yaml
  */
 export async function POST(request: Request) {
   try {
@@ -18,23 +18,22 @@ export async function POST(request: Request) {
     const token = parseSessionCookie(cookieHeader);
 
     if (token) {
-      // Get JWT secret to validate token
-      const credential = await prisma.hostCredential.findFirst();
-      if (credential) {
-        const payload = await validateSessionToken(token, credential.jwtSecret);
-        if (payload?.jti) {
-          // Revoke the session
-          await revokeSession(payload.jti);
-        }
+      const payload = await validateSessionToken(token);
+      if (payload?.jti) {
+        // Revoke the session
+        await revokeSession(payload.jti);
       }
     }
 
     // Clear the session cookie
+    const isHttps = process.env.NODE_ENV === "production" || 
+      process.env.USE_HTTPS_COOKIES === "true";
+    
     const response = NextResponse.json({ success: true });
     response.cookies.set(getSessionCookieName(), "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isHttps,
+      sameSite: isHttps ? "none" : "lax",
       path: "/",
       expires: new Date(0), // Expire immediately
     });
@@ -43,11 +42,14 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Logout error:", error);
     // Even on error, clear the cookie
+    const isHttps = process.env.NODE_ENV === "production" || 
+      process.env.USE_HTTPS_COOKIES === "true";
+    
     const response = NextResponse.json({ success: true });
     response.cookies.set(getSessionCookieName(), "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isHttps,
+      sameSite: isHttps ? "none" : "lax",
       path: "/",
       expires: new Date(0),
     });

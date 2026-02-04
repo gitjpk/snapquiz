@@ -1,6 +1,7 @@
 /**
  * GET/PUT /api/llm/settings
  * Manage LLM settings for authenticated host
+ * Reference: specs/005-multi-host-accounts/spec.md - US3 LLM settings per host
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -16,9 +17,6 @@ import { requireAuth } from "@/lib/auth/middleware";
 import { encryptApiKey, createProvider } from "@/lib/llm/client";
 import type { LLMProviderType } from "@/lib/llm/types";
 
-// Use a constant host ID for MVP (single host)
-const HOST_ID = "default-host";
-
 interface LLMSettingsResponse {
   id: string;
   hostId: string;
@@ -32,7 +30,7 @@ interface LLMSettingsResponse {
 
 /**
  * GET /api/llm/settings
- * Get current LLM settings (without API key)
+ * Get current LLM settings for authenticated host (without API key)
  */
 export async function GET(): Promise<Response> {
   // Require authentication
@@ -40,8 +38,9 @@ export async function GET(): Promise<Response> {
   if (auth instanceof NextResponse) return auth;
 
   try {
+    // Filter by hostId for data isolation (FR-008)
     const settings = await prisma.lLMSettings.findUnique({
-      where: { hostId: HOST_ID },
+      where: { hostId: auth.hostId },
     });
 
     if (!settings) {
@@ -68,7 +67,7 @@ export async function GET(): Promise<Response> {
 
 /**
  * PUT /api/llm/settings
- * Create or update LLM settings
+ * Create or update LLM settings for authenticated host
  */
 export async function PUT(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -95,11 +94,11 @@ export async function PUT(request: NextRequest): Promise<Response> {
     // Encrypt the API key only if provided
     const encryptedKey = apiKey ? encryptApiKey(apiKey) : "";
 
-    // Upsert the settings
+    // Upsert the settings with hostId from auth (FR-008)
     const settings = await prisma.lLMSettings.upsert({
-      where: { hostId: HOST_ID },
+      where: { hostId: auth.hostId },
       create: {
-        hostId: HOST_ID,
+        hostId: auth.hostId,
         provider,
         apiEndpoint,
         apiKey: encryptedKey,

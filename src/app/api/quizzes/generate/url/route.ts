@@ -1,6 +1,7 @@
 /**
  * URL Generation Endpoint - Generate Quiz from URL Content
  * Reference: specs/004-ai-quiz-generation/spec.md (US3)
+ * Reference: specs/005-multi-host-accounts/spec.md - US3 LLM settings per host
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,14 +10,16 @@ import { extractUrlContent, truncateUrlContent } from "@/lib/parsing";
 import { createProvider, decryptApiKey, DEFAULT_ENDPOINTS } from "@/lib/llm/client";
 import { buildUrlPrompt, parseGenerationResponse } from "@/lib/llm/prompts";
 import { GenerateQuizRequestSchema } from "@/lib/validation/llmSchemas";
+import { requireAuth } from "@/lib/auth/middleware";
 import type { DifficultyLevel } from "@/lib/validation/llmSchemas";
 import type { LLMProviderType } from "@/lib/llm/types";
 
 export async function POST(request: NextRequest) {
-  try {
-    // Get hostId from headers (set by auth middleware)
-    const hostId = request.headers.get("x-host-id") || "default-host";
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
+  try {
     // Parse and validate request
     const body = await request.json();
     const validation = GenerateQuizRequestSchema.safeParse(body);
@@ -37,9 +40,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get LLM settings
+    // Get LLM settings for the authenticated host (FR-008)
     const settings = await prisma.lLMSettings.findUnique({
-      where: { hostId },
+      where: { hostId: auth.hostId },
     });
 
     if (!settings) {

@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/client";
 import { validateSessionToken } from "@/lib/auth/session";
-import { unauthorized } from "@/lib/api/http";
+import { unauthorized, forbidden } from "@/lib/api/http";
 
 /**
  * Authentication result for protected routes
+ * Reference: specs/005-multi-host-accounts/research.md
  */
 export interface AuthResult {
   authenticated: true;
   sessionId: string;
+  hostId: string;  // Host ID for data isolation
 }
 
 /**
@@ -20,18 +22,11 @@ export interface AuthResult {
  * ```
  * const auth = await requireAuth();
  * if (auth instanceof NextResponse) return auth;
- * // auth is now AuthResult with sessionId
+ * // auth is now AuthResult with sessionId and hostId
  * ```
  */
 export async function requireAuth(): Promise<AuthResult | NextResponse> {
   try {
-    // Check if host credentials exist (system must be set up)
-    const credential = await prisma.hostCredential.findFirst();
-    
-    if (!credential) {
-      return unauthorized("Authentication not configured. Please complete setup first.");
-    }
-
     // Get session cookie
     const cookieStore = await cookies();
     const token = cookieStore.get("host_session")?.value;
@@ -41,7 +36,7 @@ export async function requireAuth(): Promise<AuthResult | NextResponse> {
     }
 
     // Validate the session token
-    const payload = await validateSessionToken(token, credential.jwtSecret);
+    const payload = await validateSessionToken(token);
 
     if (!payload) {
       return unauthorized("Invalid or expired session");
@@ -50,6 +45,7 @@ export async function requireAuth(): Promise<AuthResult | NextResponse> {
     // Check if session is in database and not revoked
     const session = await prisma.hostSession.findUnique({
       where: { tokenId: payload.jti as string },
+      include: { host: true },
     });
 
     if (!session) {
@@ -67,11 +63,32 @@ export async function requireAuth(): Promise<AuthResult | NextResponse> {
     return {
       authenticated: true,
       sessionId: session.tokenId,
+      hostId: session.hostId,
     };
   } catch (err) {
     console.error("Auth error:", err);
     return unauthorized("Authentication failed");
   }
+}
+
+/**
+ * Check if an authenticated user owns a specific resource
+ * Returns true if owner, false otherwise
+ * Use for 403 "Non autorisé" responses per FR-007
+ */
+export async function verifyOwnership(
+  auth: AuthResult,
+  resourceHostId: string | null | undefined
+): Promise<boolean> {
+  if (!resourceHostId) return false;
+  return auth.hostId === resourceHostId;
+}
+
+/**
+ * Return a 403 Forbidden response for unauthorized access
+ */
+export function forbiddenResponse(): NextResponse {
+  return forbidden("Non autorisé");
 }
 
 /**

@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/http";
 import { CreateSessionRequestSchema } from "@/lib/validation/schemas";
 import prisma from "@/lib/db/client";
-import { requireAuth } from "@/lib/auth/middleware";
+import { requireAuth, verifyOwnership, forbiddenResponse } from "@/lib/auth/middleware";
 
 interface CreateSessionResponse {
   sessionId: string;
@@ -19,6 +19,8 @@ interface CreateSessionResponse {
 /**
  * POST /api/sessions
  * Create a new live session from a quiz (requires authentication)
+ * Quiz must be owned by the authenticated host
+ * Reference: specs/005-multi-host-accounts/spec.md - FR-007 ownership check
  */
 export async function POST(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -32,14 +34,19 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const { quizId, leaderboardTopN } = parsed.data;
 
-  // Verify quiz exists
+  // Verify quiz exists and get ownership info
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
-    select: { id: true },
+    select: { id: true, ownerHostId: true },
   });
 
   if (!quiz) {
     return notFound("Quiz");
+  }
+
+  // Verify ownership (FR-007: return 403 for unauthorized access)
+  if (!await verifyOwnership(auth, quiz.ownerHostId)) {
+    return forbiddenResponse();
   }
 
   try {

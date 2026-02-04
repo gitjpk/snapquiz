@@ -5,9 +5,11 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // Create a demo host
+  // Create a demo host (using fake Microsoft ID for seeding)
   const host = await prisma.host.create({
     data: {
+      microsoftId: "demo-microsoft-id-00000000-0000-0000-0000-000000000000",
+      email: "demo@example.com",
       displayName: "Demo Host",
     },
   });

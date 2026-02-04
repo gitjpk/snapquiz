@@ -1,6 +1,7 @@
 /**
  * POST /api/llm/test-connection
  * Test LLM connection without saving settings
+ * Reference: specs/005-multi-host-accounts/spec.md - US3 LLM settings per host
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -15,9 +16,6 @@ import { createProvider, decryptApiKey } from "@/lib/llm/client";
 import type { LLMProviderType } from "@/lib/llm/types";
 import { LLMError } from "@/lib/llm/errors";
 
-// Use a constant host ID for MVP (single host)
-const HOST_ID = "default-host";
-
 interface TestConnectionResponse {
   success: boolean;
   modelName?: string;
@@ -27,7 +25,7 @@ interface TestConnectionResponse {
 /**
  * POST /api/llm/test-connection
  * Test LLM connection with provided credentials
- * If no API key is provided, uses the existing saved key
+ * If no API key is provided, uses the existing saved key for the authenticated host
  */
 export async function POST(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -41,11 +39,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const { provider, apiEndpoint, apiKey, model } = parsed.data;
 
-  // If no API key provided, try to get the existing one from database
+  // If no API key provided, try to get the existing one from database for this host
   let effectiveApiKey = apiKey || "";
   if (!apiKey) {
     const existingSettings = await prisma.lLMSettings.findUnique({
-      where: { hostId: HOST_ID },
+      where: { hostId: auth.hostId },
     });
     if (existingSettings?.apiKey) {
       effectiveApiKey = decryptApiKey(existingSettings.apiKey);

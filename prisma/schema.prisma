@@ -10,13 +10,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Host - The person controlling the game
+// Host - The person controlling the game (formateur)
+// Reference: specs/005-multi-host-accounts/data-model.md
 model Host {
   id          String   @id @default(cuid())
-  displayName String?
+  microsoftId String   @unique  // Microsoft oid claim (primary identifier)
+  email       String   @unique  // From Microsoft profile
+  displayName String?           // From Microsoft name claim
   createdAt   DateTime @default(now())
+  lastLoginAt DateTime @default(now())  // Updated on each login
 
-  quizzes Quiz[]
+  quizzes     Quiz[]
+  llmSettings LLMSettings?
+  sessions    HostSession[]
 }
 
 // Quiz - Reusable quiz definition
@@ -141,29 +147,23 @@ model Score {
 }
 
 // =====================================================
-// Host Password Protection (Feature 002)
-// Reference: specs/002-host-password-protection/data-model.md
+// Host Session Management (Feature 005)
+// Reference: specs/005-multi-host-accounts/data-model.md
 // =====================================================
-
-// HostCredential - Single shared password for MVP
-model HostCredential {
-  id           String   @id @default(cuid())
-  passwordHash String
-  jwtSecret    String   // Random 256-bit secret for JWT signing
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
 
 // HostSession - Tracks active sessions for audit/revocation
 model HostSession {
   id        String    @id @default(cuid())
-  tokenId   String    @unique // JWT jti claim
+  hostId    String                      // Which host this session belongs to
+  host      Host      @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  tokenId   String    @unique           // JWT jti claim
   createdAt DateTime  @default(now())
   expiresAt DateTime
   revokedAt DateTime?
   ipAddress String?
   userAgent String?
 
+  @@index([hostId])
   @@index([tokenId])
   @@index([expiresAt])
 }
@@ -177,6 +177,7 @@ model HostSession {
 model LLMSettings {
   id            String   @id @default(cuid())
   hostId        String   @unique // Only one config per host
+  host          Host     @relation(fields: [hostId], references: [id], onDelete: Cascade)
   provider      String   // 'openai' | 'anthropic' | 'azure-foundry'
   apiEndpoint   String   // Custom endpoint URL
   apiKey        String   // Encrypted API key

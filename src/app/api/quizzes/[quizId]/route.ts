@@ -7,7 +7,7 @@ import {
   parseJsonBody,
 } from "@/lib/api/http";
 import { UpdateQuizRequestSchema } from "@/lib/validation/schemas";
-import { requireAuth } from "@/lib/auth/middleware";
+import { requireAuth, verifyOwnership, forbiddenResponse } from "@/lib/auth/middleware";
 
 interface QuestionDetail {
   id: string;
@@ -27,6 +27,7 @@ interface QuizDetailResponse {
 /**
  * GET /api/quizzes/[quizId]
  * Get quiz details with questions (requires authentication)
+ * Reference: specs/005-multi-host-accounts/spec.md - FR-007 ownership check
  */
 export async function GET(
   _request: NextRequest,
@@ -56,6 +57,11 @@ export async function GET(
     return notFound("Quiz");
   }
 
+  // Verify ownership (FR-007: return 403 for unauthorized access)
+  if (!await verifyOwnership(auth, quiz.ownerHostId)) {
+    return forbiddenResponse();
+  }
+
   const response: QuizDetailResponse = {
     id: quiz.id,
     title: quiz.title,
@@ -82,6 +88,7 @@ export async function GET(
 /**
  * PUT /api/quizzes/[quizId]
  * Update a quiz (requires authentication)
+ * Reference: specs/005-multi-host-accounts/spec.md - FR-007 ownership check
  */
 export async function PUT(
   request: NextRequest,
@@ -93,14 +100,19 @@ export async function PUT(
 
   const { quizId } = await params;
 
-  // Check quiz exists
+  // Check quiz exists and get ownership info
   const existing = await prisma.quiz.findUnique({
     where: { id: quizId },
-    select: { id: true },
+    select: { id: true, ownerHostId: true },
   });
 
   if (!existing) {
     return notFound("Quiz");
+  }
+
+  // Verify ownership (FR-007: return 403 for unauthorized access)
+  if (!await verifyOwnership(auth, existing.ownerHostId)) {
+    return forbiddenResponse();
   }
 
   const parsed = await parseJsonBody(request, UpdateQuizRequestSchema);
@@ -192,6 +204,7 @@ export async function PUT(
 /**
  * DELETE /api/quizzes/[quizId]
  * Delete a quiz and all associated data (requires authentication)
+ * Reference: specs/005-multi-host-accounts/spec.md - FR-007 ownership check
  */
 export async function DELETE(
   _request: NextRequest,
@@ -203,14 +216,19 @@ export async function DELETE(
 
   const { quizId } = await params;
 
-  // Check quiz exists
+  // Check quiz exists and get ownership info
   const existing = await prisma.quiz.findUnique({
     where: { id: quizId },
-    select: { id: true },
+    select: { id: true, ownerHostId: true },
   });
 
   if (!existing) {
     return notFound("Quiz");
+  }
+
+  // Verify ownership (FR-007: return 403 for unauthorized access)
+  if (!await verifyOwnership(auth, existing.ownerHostId)) {
+    return forbiddenResponse();
   }
 
   try {

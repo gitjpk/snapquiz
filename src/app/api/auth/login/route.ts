@@ -1,112 +1,79 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db/client";
-import { verifyPassword } from "@/lib/auth/password";
-import {
-  createSessionToken,
-  createSessionRecord,
-  getSessionCookieConfig,
-} from "@/lib/auth/session";
-import {
-  loginRequestSchema,
-  formatZodError,
-} from "@/lib/validation/authSchemas";
-import { loginRateLimit, getClientIp, withRateLimit } from "@/lib/api/rateLimit";
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { getAuthorizationUrl, generateState, isMsalConfigured } from "@/lib/auth/msal";
 
 /**
- * POST /api/auth/login
- * Authenticate host with password
- * Returns 429 if rate limited (5 attempts/min/IP)
+ * GET /api/auth/login
+ * Initiates Microsoft OAuth login flow
+ * Reference: specs/005-multi-host-accounts/contracts/openapi.yaml
+ * 
+ * Query params:
+ * - returnTo: URL to redirect to after login (default: /host/quizzes)
  */
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const clientIp = getClientIp(request);
-    const rateLimitResult = withRateLimit(request, clientIp, loginRateLimit);
-    if (!rateLimitResult.allowed) {
+    // Check if MSAL is configured
+    if (!isMsalConfigured()) {
       return NextResponse.json(
         {
-          error: "TOO_MANY_REQUESTS",
-          message: "Too many login attempts. Please try again later.",
+          error: "NOT_CONFIGURED",
+          message: "Microsoft Entra ID is not configured. Please set AZURE_AD_CLIENT_ID and AZURE_AD_CLIENT_SECRET.",
         },
-        { status: 429 }
+        { status: 500 }
       );
     }
 
-    // Check if password exists
-    const credential = await prisma.hostCredential.findFirst();
-    if (!credential) {
-      return NextResponse.json(
-        {
-          error: "NOT_SETUP",
-          message: "Host password has not been configured. Please run setup first.",
-        },
-        { status: 400 }
-      );
-    }
+    // Get return URL from query params
+    const searchParams = request.nextUrl.searchParams;
+    const returnTo = searchParams.get("returnTo") || "/host/quizzes";
 
-    // Parse and validate request body
-    const body = await request.json();
-    const validation = loginRequestSchema.safeParse(body);
+    // Generate state for CSRF protection (includes returnTo URL)
+    const state = generateState();
+    const stateData = JSON.stringify({ state, returnTo });
+    const encodedState = Buffer.from(stateData).toString("base64url");
 
-    if (!validation.success) {
-      return NextResponse.json(formatZodError(validation.error), {
-        status: 400,
-      });
-    }
-
-    const { password } = validation.data;
-
-    // Verify password
-    const isValid = await verifyPassword(password, credential.passwordHash);
-    if (!isValid) {
-      return NextResponse.json(
-        {
-          error: "INVALID_PASSWORD",
-          message: "The password you entered is incorrect",
-        },
-        { status: 401 }
-      );
-    }
-
-    // Create session token
-    const tokenId = crypto.randomUUID();
-    const { token, expiresAt } = await createSessionToken(
-      credential.jwtSecret,
-      tokenId
-    );
-
-    // Create session record
-    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0] ||
-      request.headers.get("x-real-ip") ||
-      undefined;
-    const userAgent = request.headers.get("user-agent") || undefined;
-
-    await createSessionRecord(tokenId, expiresAt, ipAddress, userAgent);
-
-    // Set session cookie
-    const cookieConfig = getSessionCookieConfig(expiresAt);
-    const response = NextResponse.json({
-      success: true,
-      expiresAt: expiresAt.toISOString(),
+    // Store state in cookie for verification in callback
+    const cookieStore = await cookies();
+    cookieStore.set("oauth_state", encodedState, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production" || process.env.USE_HTTPS_COOKIES === "true",
+      sameSite: "lax",
+      maxAge: 600, // 10 minutes
+      path: "/",
     });
 
-    response.cookies.set(cookieConfig.name, token, {
-      httpOnly: cookieConfig.httpOnly,
-      secure: cookieConfig.secure,
-      sameSite: cookieConfig.sameSite,
-      path: cookieConfig.path,
-      expires: cookieConfig.expires,
-    });
+    // Build redirect URI
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+      `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+    const redirectUri = `${baseUrl}/api/auth/callback`;
 
-    return response;
+    // Get Microsoft authorization URL
+    const authUrl = await getAuthorizationUrl(redirectUri, encodedState);
+
+    // Redirect to Microsoft login
+    return NextResponse.redirect(authUrl);
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
       {
-        error: "INTERNAL_ERROR",
-        message: "An unexpected error occurred",
+        error: "LOGIN_ERROR",
+        message: "Failed to initiate login. Please try again.",
       },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Legacy POST endpoint for backwards compatibility during transition
+ * Returns error directing users to use Microsoft login
+ */
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: "METHOD_CHANGED",
+      message: "Password authentication has been replaced. Please use 'Sign in with Microsoft' button.",
+    },
+    { status: 400 }
+  );
 }

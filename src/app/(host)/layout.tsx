@@ -13,16 +13,41 @@ export const metadata: Metadata = {
   description: "Create and host live quiz games",
 };
 
-async function getAuthStatus() {
-  const credential = await prisma.hostCredential.findFirst();
-  if (!credential) return { isAuthenticated: false };
+interface AuthStatus {
+  isAuthenticated: boolean;
+  host?: {
+    id: string;
+    email: string;
+    displayName: string | null;
+  };
+}
 
+async function getAuthStatus(): Promise<AuthStatus> {
   const cookieStore = await cookies();
   const token = cookieStore.get("host_session")?.value;
   if (!token) return { isAuthenticated: false };
 
-  const payload = await validateSessionToken(token, credential.jwtSecret);
-  return { isAuthenticated: !!payload };
+  const payload = await validateSessionToken(token);
+  if (!payload || !payload.jti) return { isAuthenticated: false };
+
+  // Get session with host info
+  const session = await prisma.hostSession.findUnique({
+    where: { tokenId: payload.jti },
+    include: { host: true },
+  });
+
+  if (!session || session.revokedAt || session.expiresAt < new Date()) {
+    return { isAuthenticated: false };
+  }
+
+  return {
+    isAuthenticated: true,
+    host: {
+      id: session.host.id,
+      email: session.host.email,
+      displayName: session.host.displayName,
+    },
+  };
 }
 
 export default async function HostLayout({
@@ -30,11 +55,11 @@ export default async function HostLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getAuthStatus();
+  const { isAuthenticated, host } = await getAuthStatus();
 
   return (
     <div className="min-h-screen bg-background">
-      <HostNav isAuthenticated={isAuthenticated} />
+      <HostNav isAuthenticated={isAuthenticated} hostName={host?.displayName || host?.email} />
       <main>
         <HostClientLayout>{children}</HostClientLayout>
       </main>

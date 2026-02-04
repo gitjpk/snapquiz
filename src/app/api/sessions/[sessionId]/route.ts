@@ -1,6 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/client";
 import { jsonResponse, notFound } from "@/lib/api/http";
+import { requireAuth, verifyOwnership, forbiddenResponse } from "@/lib/auth/middleware";
 
 interface SessionDetailResponse {
   id: string;
@@ -18,12 +19,18 @@ interface SessionDetailResponse {
 
 /**
  * GET /api/sessions/[sessionId]
- * Get session details by ID
+ * Get session details by ID (requires authentication)
+ * Session's quiz must be owned by the authenticated host
+ * Reference: specs/005-multi-host-accounts/spec.md - FR-007 ownership check
  */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ): Promise<Response> {
+  // Require authentication
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   const { sessionId } = await params;
 
   const session = await prisma.liveSession.findUnique({
@@ -34,6 +41,7 @@ export async function GET(
           id: true,
           title: true,
           description: true,
+          ownerHostId: true,
           _count: {
             select: { questions: true },
           },
@@ -47,6 +55,11 @@ export async function GET(
 
   if (!session) {
     return notFound("Session");
+  }
+
+  // Verify ownership via quiz (FR-007: return 403 for unauthorized access)
+  if (!await verifyOwnership(auth, session.quiz.ownerHostId)) {
+    return forbiddenResponse();
   }
 
   const response: SessionDetailResponse = {

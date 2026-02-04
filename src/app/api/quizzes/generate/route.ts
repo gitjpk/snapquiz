@@ -1,6 +1,7 @@
 /**
  * POST /api/quizzes/generate
  * Generate quiz questions using AI
+ * Reference: specs/005-multi-host-accounts/spec.md - US3 LLM settings per host
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -18,9 +19,6 @@ import { createProviderFromSettings } from "@/lib/llm/client";
 import { buildTopicPrompt, parseGenerationResponse } from "@/lib/llm/prompts";
 import { LLMError } from "@/lib/llm/errors";
 import type { GeneratedQuestion, LLMProviderType } from "@/lib/llm/types";
-
-// Use a constant host ID for MVP (single host)
-const HOST_ID = "default-host";
 
 // Rate limit: 10 generations per minute per host (protects against API abuse)
 const generateRateLimit = createRateLimiter({
@@ -42,6 +40,7 @@ interface GenerateResponse {
 /**
  * POST /api/quizzes/generate
  * Generate quiz questions from a topic (US1 MVP)
+ * Uses the authenticated host's LLM settings (FR-008)
  */
 export async function POST(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -62,12 +61,13 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const { source, questionCount, difficulty, language } = parsed.data;
 
-  // Get LLM settings
+  // Get LLM settings for the authenticated host (FR-008)
   const settings = await prisma.lLMSettings.findUnique({
-    where: { hostId: HOST_ID },
+    where: { hostId: auth.hostId },
   });
 
   if (!settings) {
+    // Per FR-013: redirect message to configure LLM settings
     return badRequest("LLM not configured. Please configure your AI provider in settings.");
   }
 

@@ -4,33 +4,51 @@ import {
   validateSessionToken,
   parseSessionCookie,
 } from "@/lib/auth/session";
+import { isMsalConfigured } from "@/lib/auth/msal";
 
 /**
  * GET /api/auth/status
- * Check if password is set up and if user is authenticated
+ * Check authentication status and return host info
+ * Reference: specs/005-multi-host-accounts/contracts/openapi.yaml
  */
 export async function GET(request: Request) {
   try {
-    // Check if password exists
-    const credential = await prisma.hostCredential.findFirst();
-    const isSetup = !!credential;
+    // Check if Microsoft OAuth is configured
+    const isConfigured = isMsalConfigured();
 
     // Check if user is authenticated
     let isAuthenticated = false;
+    let host: { id: string; email: string; displayName: string | null; lastLoginAt: string | null } | null = null;
 
-    if (credential) {
-      const cookieHeader = request.headers.get("cookie");
-      const token = parseSessionCookie(cookieHeader);
+    const cookieHeader = request.headers.get("cookie");
+    const token = parseSessionCookie(cookieHeader);
 
-      if (token) {
-        const payload = await validateSessionToken(token, credential.jwtSecret);
-        isAuthenticated = !!payload;
+    if (token) {
+      const payload = await validateSessionToken(token);
+      
+      if (payload && payload.jti) {
+        // Get session with host info
+        const session = await prisma.hostSession.findUnique({
+          where: { tokenId: payload.jti },
+          include: { host: true },
+        });
+
+        if (session && !session.revokedAt && session.expiresAt > new Date()) {
+          isAuthenticated = true;
+          host = {
+            id: session.host.id,
+            email: session.host.email,
+            displayName: session.host.displayName,
+            lastLoginAt: session.host.lastLoginAt?.toISOString() || null,
+          };
+        }
       }
     }
 
     return NextResponse.json({
-      isSetup,
+      isConfigured,
       isAuthenticated,
+      host,
     });
   } catch (error) {
     console.error("Status check error:", error);

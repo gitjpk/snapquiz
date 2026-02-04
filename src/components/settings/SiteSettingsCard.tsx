@@ -98,11 +98,11 @@ export function SiteSettingsCard() {
                 key={colorOption.value}
                 onClick={() => setAccentColor(colorOption.value)}
                 className={cn(
-                  "w-10 h-10 rounded-full transition-all ring-offset-2 ring-offset-background",
+                  "w-10 h-10 rounded-lg transition-all ring-offset-2 ring-offset-background",
                   colorOption.color,
                   colorOption.hoverColor,
                   accentColor === colorOption.value
-                    ? "ring-2 ring-current scale-110"
+                    ? "ring-2 ring-current scale-105"
                     : "hover:ring-2 hover:scale-105"
                 )}
                 title={t.colors[colorOption.value]}

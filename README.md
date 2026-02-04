@@ -206,17 +206,54 @@ $env:NODE_ENV="production"; npx tsx server.ts
 4. Wait for the host to start
 5. Answer questions as fast as you can!
 
+## � Authentication with Microsoft Entra ID
+
+SnapQuiz uses Microsoft Entra ID (Azure AD) for host authentication, enabling secure multi-host support.
+
+### Setting Up Microsoft Entra ID
+
+1. **Register an application in Azure Portal**:
+   - Go to [Azure Portal](https://portal.azure.com/) → Microsoft Entra ID → App registrations
+   - Click "New registration"
+   - Name: `SnapQuiz` (or your preferred name)
+   - Supported account types: Choose based on your needs:
+     - "Single tenant" for your organization only
+     - "Multitenant" for any Microsoft account
+   - Redirect URI: `http://localhost:3000/api/auth/callback` (Web platform)
+
+2. **Configure the application**:
+   - Go to "Authentication" → Add redirect URIs for production
+   - Go to "Certificates & secrets" → Create a new client secret
+   - Copy the secret value (shown only once)
+
+3. **Update environment variables**:
+   ```env
+   # Microsoft Entra ID (Azure AD)
+   AZURE_AD_CLIENT_ID=<your-application-client-id>
+   AZURE_AD_CLIENT_SECRET=<your-client-secret>
+   AZURE_AD_TENANT_ID=common  # or specific tenant ID
+   ```
+
+4. **Production redirect URIs**:
+   - Add your production URL: `https://yourdomain.com/api/auth/callback`
+   - For ngrok development: `https://your-ngrok-id.ngrok.io/api/auth/callback`
+
+### Multi-Host Features
+
+- **Data Isolation**: Each host sees only their own quizzes and sessions
+- **Per-Host LLM Settings**: Each host configures their own API keys
+- **Secure Sessions**: 7-day session duration with HTTP-only cookies
+
 ## 🔌 API Endpoints
 
 ### Authentication
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/setup` | Initial password setup |
-| POST | `/api/auth/login` | Login with password |
-| POST | `/api/auth/logout` | Logout |
-| GET | `/api/auth/status` | Check auth status |
-| POST | `/api/auth/change-password` | Change password |
+| GET | `/api/auth/login` | Redirect to Microsoft OAuth |
+| GET | `/api/auth/callback` | Handle OAuth callback |
+| POST | `/api/auth/logout` | Logout and clear session |
+| GET | `/api/auth/status` | Check auth status, get host info |
 
 ### Quizzes
 

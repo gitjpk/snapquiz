@@ -2,6 +2,7 @@
  * POST /api/quizzes/generate/document
  * Generate quiz questions from an uploaded document
  * Reference: specs/004-ai-quiz-generation/spec.md (US2)
+ * Reference: specs/005-multi-host-accounts/spec.md - US3 LLM settings per host
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -23,9 +24,6 @@ import type { GeneratedQuestion, LLMProviderType, QuizLanguage } from "@/lib/llm
 export const maxDuration = 60; // 60 seconds timeout
 export const dynamic = "force-dynamic";
 
-// Use a constant host ID for MVP (single host)
-const HOST_ID = "default-host";
-
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 interface GenerateResponse {
@@ -41,6 +39,7 @@ interface GenerateResponse {
 /**
  * POST /api/quizzes/generate/document
  * Generate quiz questions from an uploaded document
+ * Uses the authenticated host's LLM settings (FR-008)
  */
 export async function POST(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -78,9 +77,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     const languageResult = QuizLanguageSchema.safeParse(languageStr || "en");
     const language: QuizLanguage = languageResult.success ? languageResult.data : "en";
 
-    // Get LLM settings
+    // Get LLM settings for the authenticated host (FR-008)
     const settings = await prisma.lLMSettings.findUnique({
-      where: { hostId: HOST_ID },
+      where: { hostId: auth.hostId },
     });
 
     if (!settings) {

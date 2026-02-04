@@ -24,14 +24,17 @@ interface QuizResponse {
 
 /**
  * GET /api/quizzes
- * List all quizzes (requires authentication)
+ * List all quizzes owned by the authenticated host (requires authentication)
+ * Reference: specs/005-multi-host-accounts/spec.md - US2 Data Isolation
  */
 export async function GET(): Promise<Response> {
   // Require authentication
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
+  // Filter by hostId for data isolation (FR-005)
   const quizzes = await prisma.quiz.findMany({
+    where: { ownerHostId: auth.hostId },
     orderBy: { createdAt: "desc" },
     include: {
       _count: {
@@ -54,6 +57,7 @@ export async function GET(): Promise<Response> {
 /**
  * POST /api/quizzes
  * Create a new quiz with questions (requires authentication)
+ * Quiz is automatically associated with the authenticated host
  */
 export async function POST(request: NextRequest): Promise<Response> {
   // Require authentication
@@ -72,6 +76,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       data: {
         title,
         description,
+        ownerHostId: auth.hostId, // Associate with authenticated host (FR-006)
         questions: {
           create: questions.map((q, qIndex) => ({
             orderIndex: qIndex,
