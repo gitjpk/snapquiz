@@ -16,6 +16,10 @@ import {
  * Creates or updates Host record, issues session token
  */
 export async function GET(request: NextRequest) {
+  // Get base URL for redirects (must use public URL, not internal container URL)
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+  
   try {
     const searchParams = request.nextUrl.searchParams;
     
@@ -28,17 +32,17 @@ export async function GET(request: NextRequest) {
       
       // Handle user cancellation
       if (error === "access_denied") {
-        return NextResponse.redirect(new URL("/login?error=cancelled", request.url));
+        return NextResponse.redirect(new URL("/login?error=cancelled", baseUrl));
       }
       
       // Handle other errors
-      return NextResponse.redirect(new URL("/login?error=auth_failed", request.url));
+      return NextResponse.redirect(new URL("/login?error=auth_failed", baseUrl));
     }
 
     // Get authorization code
     const code = searchParams.get("code");
     if (!code) {
-      return NextResponse.redirect(new URL("/login?error=no_code", request.url));
+      return NextResponse.redirect(new URL("/login?error=no_code", baseUrl));
     }
 
     // Verify state (CSRF protection)
@@ -48,7 +52,7 @@ export async function GET(request: NextRequest) {
     
     if (!state || !storedState || state !== storedState) {
       console.error("State mismatch:", { state, storedState });
-      return NextResponse.redirect(new URL("/login?error=invalid_state", request.url));
+      return NextResponse.redirect(new URL("/login?error=invalid_state", baseUrl));
     }
 
     // Parse state to get returnTo URL
@@ -67,12 +71,10 @@ export async function GET(request: NextRequest) {
 
     // Check if MSAL is configured
     if (!isMsalConfigured()) {
-      return NextResponse.redirect(new URL("/login?error=not_configured", request.url));
+      return NextResponse.redirect(new URL("/login?error=not_configured", baseUrl));
     }
 
     // Build redirect URI (must match login route)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-      `${request.nextUrl.protocol}//${request.nextUrl.host}`;
     const redirectUri = `${baseUrl}/api/auth/callback`;
 
     // Exchange code for tokens and get user info
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     // Set session cookie and redirect
     const cookieConfig = getSessionCookieConfig(expiresAt);
-    const response = NextResponse.redirect(new URL(returnTo, request.url));
+    const response = NextResponse.redirect(new URL(returnTo, baseUrl));
 
     response.cookies.set(cookieConfig.name, token, {
       httpOnly: cookieConfig.httpOnly,
@@ -122,6 +124,6 @@ export async function GET(request: NextRequest) {
     console.error("OAuth callback error:", error);
     
     // Per FR-012: Show clear error message if Microsoft Entra ID is unavailable
-    return NextResponse.redirect(new URL("/login?error=unavailable", request.url));
+    return NextResponse.redirect(new URL("/login?error=unavailable", baseUrl));
   }
 }
